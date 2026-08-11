@@ -3,101 +3,517 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="CargoForge 是面向港口件杂货数字孪生资产生成的生成式三维重建系统，结合 Hunyuan3D-2.1、HiCache++、双 GPU 异步推理服务与领域 LoRA 微调。">
-  <title>CargoForge：面向港口件杂货的生成式三维重建系统</title>
+  <meta name="description" content="CargoForge3D 是面向港口件杂货数字孪生资产生成的 Hunyuan3D-2.1 多 GPU 推理服务系统，包含 HiCache++ 白膜加速、FastAPI/Redis/PostgreSQL 异步调度和领域 LoRA 微调。">
+  <meta name="keywords" content="CargoForge3D, Hunyuan3D, 港口件杂货, 数字孪生, HiCache++, Redis, PostgreSQL, FastAPI, LoRA, 三维重建">
+  <title>CargoForge3D：港口件杂货生成式三维重建系统</title>
   <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
   <link rel="stylesheet" href="./static/css/site.css">
 </head>
 <body>
   <header class="site-header">
     <a class="brand" href="./zh.html">
-      <span class="brand-mark">CF</span>
-      <span>CargoForge</span>
+      <span class="brand-mark">CF3D</span>
+      <span>CargoForge3D</span>
     </a>
     <nav class="nav-links" aria-label="主导航">
-      <a href="#system">系统</a>
-      <a href="#results">三维结果</a>
-      <a href="#adaptation">LoRA</a>
+      <a href="#overview">项目概览</a>
+      <a href="#blueprint">系统蓝图</a>
+      <a href="#base-model">混元 3D</a>
+      <a href="#acceleration">白膜加速</a>
+      <a href="#serving">推理服务</a>
+      <a href="#lora">LoRA 微调</a>
+      <a href="#results">结果展示</a>
       <a href="./index.html">English</a>
       <a href="./about.html">About</a>
     </nav>
   </header>
 
   <main>
-    <section class="hero-section">
+    <section class="hero-section" id="overview">
       <div class="hero-copy">
-        <p class="eyebrow">港口现场图像到数字孪生 Mesh 资产</p>
-        <h1>CargoForge：面向港口件杂货的生成式三维重建与多 GPU 推理服务系统</h1>
+        <p class="eyebrow">港口数字孪生 Mesh 资产生成</p>
+        <h1>面向件杂货码头的生成式三维重建与多 GPU 推理服务系统。</h1>
         <p class="hero-lead">
-          CargoForge 面向件杂货码头数字孪生中的资产快速建模需求，将现场非接触图像转换为可入库的 GLB/PBR
-          三维资产。系统基于 Hunyuan3D-2.1，集成 HiCache++ 白膜加速、双 RTX 4080 异步推理服务以及领域 LoRA 微调。
+          CargoForge3D 将港口现场采集的货物图像转换为可入库、可预览、可导入数字孪生平台的 GLB/PBR 三维资产。
+          项目以开源 Hunyuan3D-2.1 为基础，完成 Windows 本地化适配、HiCache++ 白膜推理加速、双 RTX4080 异步推理调度，
+          并通过教师模型伪标签和 Rank-16 LoRA 微调增强件杂货场景的几何重建能力。
         </p>
         <div class="hero-actions">
-          <a class="button primary" href="https://github.com/cargo-forge3d/cargo-forge3d.github.io">网页仓库</a>
-          <a class="button secondary" href="#results">查看三维结果</a>
+          <a class="button primary" href="#serving">查看系统架构</a>
+          <a class="button secondary" href="#results">查看 3D 结果</a>
         </div>
-        <div class="metric-strip" aria-label="核心指标">
-          <div><span class="metric-value">2.8x</span><span class="metric-label">典型白膜加速</span></div>
-          <div><span class="metric-value">45.4s</span><span class="metric-label">Shape P95</span></div>
-          <div><span class="metric-value">321.3s</span><span class="metric-label">Texture P95</span></div>
-          <div><span class="metric-value">269/天</span><span class="metric-label">单节点带纹理资产</span></div>
+        <div class="metric-strip" aria-label="项目核心指标">
+          <div><span class="metric-value">2.8x</span><span class="metric-label">白膜端到端加速</span></div>
+          <div><span class="metric-value">45.4s</span><span class="metric-label">Shape P95, RTX4080</span></div>
+          <div><span class="metric-value">321.3s</span><span class="metric-label">Texture P95, RTX4080</span></div>
+          <div><span class="metric-value">269/天</span><span class="metric-label">单节点带纹理资产吞吐</span></div>
         </div>
       </div>
       <div class="hero-visual">
         <div class="viewer-shell">
-          <div class="viewer-caption"><span>交互式 GLB 预览</span><strong id="hero-case-name">木箱件杂货</strong></div>
-          <model-viewer id="heroModel" src="./resources/gallery/crate/textured.glb" alt="生成的件杂货三维模型" loading="eager" camera-controls interaction-prompt="none" touch-action="pan-y" environment-image="legacy" camera-orbit="145deg 70deg auto" zoom-sensitivity="0.25" shadow-intensity="0.25" style="width:100%;height:100%;"></model-viewer>
+          <div class="viewer-caption">
+            <span>交互式 GLB 预览</span>
+            <strong id="hero-case-name">木箱件杂货</strong>
+          </div>
+          <model-viewer id="heroModel"
+            src="./resources/gallery/crate/textured.glb"
+            alt="生成的港口件杂货三维模型"
+            loading="eager"
+            camera-controls
+            interaction-prompt="none"
+            touch-action="pan-y"
+            environment-image="legacy"
+            camera-orbit="145deg 70deg auto"
+            zoom-sensitivity="0.25"
+            shadow-intensity="0.2"
+            style="width:100%;height:100%;">
+          </model-viewer>
         </div>
         <div class="input-card">
-          <img id="hero-input" src="./resources/gallery/crate/input.png" alt="输入货物图像">
-          <div><span>输入图像</span><strong>现场采集</strong></div>
+          <img id="hero-input" src="./resources/gallery/crate/input.png" alt="现场输入货物图像">
+          <div><span>输入条件</span><strong>港口现场图像</strong></div>
         </div>
       </div>
     </section>
 
-    <section class="section compact" id="system">
+    <section class="section problem-section">
       <div class="section-heading">
-        <p class="eyebrow">业务闭环</p>
-        <h2>从单图生成 Demo 到港口资产生成服务</h2>
+        <p class="eyebrow">业务动机</p>
+        <h2>为什么它不是一个简单的图生 3D Demo</h2>
+        <p>
+          件杂货码头的实际需求是把现场货物快速转成数字孪生系统中的可用资产，服务于资产归档、吊装仿真、场景可视化和尺度还原。
+          因此系统必须覆盖采集、分割、重建、尺度校准、资产导出、任务审计和资源监控，而不是只跑通一次单图生成。
+        </p>
       </div>
-      <div class="three-grid">
-        <article class="feature-card">
-          <span class="card-index">01</span>
-          <h3>白膜生成加速</h3>
-          <p>移植 HiCache++ 缓存外推机制，在 DiT 采样过程中复用历史速度场并跳过部分前向计算。RTX 4080 上典型样本 30 步采样由 40s 降至 7s，白膜端到端由 67.3s 降至 24.0s。</p>
+      <div class="business-grid">
+        <article>
+          <h3>吊装触发后的快速占位</h3>
+          <p>
+            港口现场不一定先等纹理。白膜可以先用于包围盒估计、孪生场景占位、后续尺度对齐和资产入库，纹理阶段再异步补齐。
+          </p>
         </article>
-        <article class="feature-card">
-          <span class="card-index">02</span>
-          <h3>双 GPU 异步服务</h3>
-          <p>基于 FastAPI、Redis、PostgreSQL 构建 shape/texture 两级队列，将 GPU0 和 GPU1 分别作为白膜与纹理常驻 Worker，并落库记录任务状态、事件、产物、显存、CPU/RAM 与失败信息。</p>
+        <article>
+          <h3>消费级双 4080 的显存约束</h3>
+          <p>
+            单张 RTX4080 16GB 可以稳定跑白膜，但 shape 与 texture 同进程同显卡容易显存不足。因此必须把两个阶段拆开并常驻不同 GPU。
+          </p>
         </article>
-        <article class="feature-card">
-          <span class="card-index">03</span>
-          <h3>领域 LoRA 微调</h3>
-          <p>用更强的商业教师模型生成件杂货 GLB 伪标签，经过网格清洗、水密化、SDF 采样与多视角条件渲染后做 Rank-16 LoRA 微调，验证集 Chamfer-L1 下降 36.0%，F-score@0.05 提升 12.3 个百分点。</p>
+        <article>
+          <h3>开源模型的领域差距</h3>
+          <p>
+            Hunyuan3D-2.1 对港口长条钢构、堆叠管束、覆盖货物和异形件杂货的先验不足，需要用领域数据和教师模型蒸馏提升几何质量。
+          </p>
         </article>
       </div>
     </section>
 
-    <section class="section">
-      <div class="section-heading centered">
-        <p class="eyebrow">推理流程</p>
-        <h2>面向件杂货码头的重建流水线</h2>
+    <section class="section" id="blueprint">
+      <div class="section-heading">
+        <p class="eyebrow">系统蓝图</p>
+        <h2>从港口图像采集到数字孪生资产入库的完整闭环</h2>
+        <p>
+          这个项目不是把 Hunyuan3D 跑起来就结束，而是把每个阶段都工程化：输入是什么，输出是什么，占用哪块硬件，
+          如何记录状态，失败后如何恢复，以及如何用指标证明系统容量。
+        </p>
       </div>
-      <div class="pipeline">
-        <div class="pipeline-node"><strong>采集</strong><span>工业相机 / 吊装事件 / 现场图片</span></div>
-        <div class="pipeline-node"><strong>预处理</strong><span>背景剔除与图像筛选</span></div>
-        <div class="pipeline-node"><strong>白膜</strong><span>GPU0 + Hunyuan3D-2.1 + HiCache++</span></div>
-        <div class="pipeline-node"><strong>纹理</strong><span>GPU1 PBR 纹理生成</span></div>
-        <div class="pipeline-node"><strong>资产</strong><span>GLB 导出、profile、孪生平台入库</span></div>
+
+      <div class="blueprint-grid">
+        <article class="blueprint-step">
+          <span>01</span>
+          <h3>现场采集</h3>
+          <p>
+            输入来自港口现场相机、手机、云台或吊装事件触发采集。目标不是实验室棚拍，而是在真实堆场背景中获得可重建的货物图像。
+          </p>
+          <small>输出：原始图像、采集元信息、可选尺度参考。</small>
+        </article>
+        <article class="blueprint-step">
+          <span>02</span>
+          <h3>图像预处理</h3>
+          <p>
+            背景剔除和图像筛选用于降低地面、车辆、货架、天空等干扰，让模型关注货物主体，而不是把港口环境也重建进去。
+          </p>
+          <small>输出：source condition 图像和清理后的输入图像。</small>
+        </article>
+        <article class="blueprint-step">
+          <span>03</span>
+          <h3>快速白膜</h3>
+          <p>
+            GPU0 运行 Hunyuan3D-2.1 shape pipeline，并接入 HiCache++。白膜是业务上第一个可用结果，可用于孪生占位和尺度对齐。
+          </p>
+          <small>输出：白膜 Mesh、包围盒、面数统计、shape profile。</small>
+        </article>
+        <article class="blueprint-step">
+          <span>04</span>
+          <h3>纹理生成</h3>
+          <p>
+            GPU1 运行低显存 PBR 纹理管线。纹理阶段耗时长、显存重，因此单独作为第二级队列，避免阻塞白膜吞吐。
+          </p>
+          <small>输出：带纹理 Mesh、PBR 贴图、texture profile。</small>
+        </article>
+        <article class="blueprint-step">
+          <span>05</span>
+          <h3>资产打包</h3>
+          <p>
+            系统把 GLB/OBJ、贴图、预览图和 profile.json 放入统一 job 目录，并把 artifact 元信息写入 PostgreSQL。
+          </p>
+          <small>输出：可下载 GLB 和可审计资产记录。</small>
+        </article>
+        <article class="blueprint-step">
+          <span>06</span>
+          <h3>评测迭代</h3>
+          <p>
+            运行时指标、排队时间、P95 延迟、显存峰值、失败率、mesh 统计和 LoRA 验证指标共同反馈到系统调优。
+          </p>
+          <small>输出：Dashboard 指标和训练/评测记录。</small>
+        </article>
+      </div>
+
+      <div class="talking-card">
+        <h3>面试叙事重点</h3>
+        <p>
+          一个 Demo 只能说明模型能跑一次；CargoForge3D 说明的是如何把生成式三维模型适配到受限工业场景：
+          显存有限、纹理耗时长、多请求并发、任务可恢复、吞吐可量化、特定领域几何可微调。
+        </p>
+      </div>
+    </section>
+
+    <section class="section" id="base-model">
+      <div class="section-heading centered">
+        <p class="eyebrow">基础模型</p>
+        <h2>Hunyuan3D-2.1 在本项目中的角色</h2>
+        <p>
+          本项目把 Hunyuan3D-2.1 拆成两个工程阶段理解：第一阶段是单图白膜生成，第二阶段是基于白膜的 PBR 纹理生成和 GLB 打包。
+        </p>
+      </div>
+
+      <figure class="project-figure">
+        <img src="./resources/figures/cargo-forge3d-algorithm-overview.png" alt="CargoForge3D 算法总览：Hunyuan3D-2.1、HiCache++ 与领域 LoRA">
+        <figcaption>
+          算法总览。HiCache++ 插入 Hunyuan3D-2.1 的 Shape DiT 采样循环中；件杂货领域 LoRA 由教师模型生成的
+          GLB 伪标签监督训练，并回接到 shape 模型以增强港口货物几何先验。
+        </figcaption>
+      </figure>
+
+      <div class="diagram-card">
+        <div class="flow-title">
+          <span>图像到三维资产链路</span>
+          <strong>从现场图像到可部署 GLB</strong>
+        </div>
+        <div class="flow-diagram hunyuan-flow">
+          <div class="flow-node input">现场输入图像</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node">DINOv2 图像编码</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node">Shape DiT 流匹配采样</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node">Shape VAE 与网格提取</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node output">白膜 Mesh</div>
+          <div class="flow-node sub">法线 / 位置条件视图</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node sub">Texture Diffusion</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node sub">PBR 烘焙与 GLB 打包</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node output">带纹理 GLB</div>
+        </div>
+      </div>
+
+      <div class="two-column">
+        <article class="text-panel">
+          <h3>Windows 与本地模型适配</h3>
+          <p>
+            针对官方工程偏 Linux 的问题，修复 CUDA 设备绑定、TorchVision 兼容、本地 HuggingFace/hy3dgen 模型路径、
+            动态模块缓存、纹理管线设备硬编码和 shape/texture 显存释放等问题，使其能在 Windows 双 4080 工作站稳定运行。
+          </p>
+        </article>
+        <article class="text-panel">
+          <h3>能力边界</h3>
+          <p>
+            Hunyuan3D-2.1 仍然是单图白膜生成模型。本项目不宣称实现多视角白膜生成；双 GPU 是工程上的阶段并行，
+            不是把同一个 DiT 模型强行拆到两张卡上做张量并行。
+          </p>
+        </article>
+      </div>
+
+      <div class="detail-block">
+        <div class="detail-copy">
+          <h3>Shape 阶段内部发生了什么</h3>
+          <p>
+            输入图像先被编码为视觉条件，shape DiT 在 latent shape feature 上进行迭代式流匹配采样；
+            采样完成后，shape VAE 解码 latent 表征，网格提取模块再将其转换为白膜 Mesh。对港口业务而言，
+            这一阶段决定货物轮廓、粗拓扑、尺寸比例和是否足够可信地进入孪生场景。
+          </p>
+        </div>
+        <div class="detail-copy">
+          <h3>Texture 阶段内部发生了什么</h3>
+          <p>
+            纹理管线会从白膜渲染法线、位置等几何条件视图，再通过 paint model 生成多视角纹理图，
+            最后进行反投影、PBR 烘焙和 GLB 打包。它慢的原因不是单一 UNet，而是扩散推理、渲染、补洞、
+            纹理融合和导出链路叠加。
+          </p>
+        </div>
+        <div class="detail-copy">
+          <h3>为什么必须拆分</h3>
+          <p>
+            白膜和纹理在业务上代表不同价值。白膜偏运营，可以先用于占位、包围盒和尺度校准；纹理偏归档和展示，
+            用于提升可识别性。拆分后，系统可以先返回中间可用结果，而不是等完整 PBR 链路结束。
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="acceleration">
+      <div class="section-heading">
+        <p class="eyebrow">技术点一</p>
+        <h2>HiCache++ 白膜推理加速</h2>
+        <p>
+          港口业务中，白膜越快出来，越早能完成孪生占位、包围盒估计和后续尺度校准。HiCache++ 针对 shape 阶段的 DiT 采样循环，
+          通过历史速度场缓存和外推减少完整前向次数。
+        </p>
+      </div>
+
+      <div class="hicache-layout">
+        <div class="diagram-card">
+          <div class="flow-title">
+            <span>缓存外推式采样</span>
+            <strong>关键步刷新 DiT，中间步预测状态</strong>
+          </div>
+          <div class="cache-timeline" aria-label="HiCache++ 采样时间线">
+            <div class="tick full">DiT</div>
+            <div class="tick cache">forecast</div>
+            <div class="tick cache">forecast</div>
+            <div class="tick full">refresh</div>
+            <div class="tick cache">forecast</div>
+            <div class="tick cache">forecast</div>
+            <div class="tick full">DiT</div>
+          </div>
+          <p>
+            在刷新步正常执行 DiT 前向，在缓存步用历史轨迹预测下一状态，减少最昂贵的网络调用。这个优化不改变业务输入输出，
+            适合先生成白膜占位、后续再补纹理的港口流水线。
+          </p>
+        </div>
+        <div class="speed-table">
+          <div class="speed-row header"><span>阶段</span><span>Baseline</span><span>HiCache++</span><span>收益</span></div>
+          <div class="speed-row"><span>30 步采样</span><span>40.0 s</span><span>7.0 s</span><span>5.7x</span></div>
+          <div class="speed-row"><span>白膜端到端</span><span>67.3 s</span><span>24.0 s</span><span>2.8x</span></div>
+          <div class="speed-row"><span>服务模式</span><span>串行单请求</span><span>GPU0 常驻 worker</span><span>低冷启动</span></div>
+        </div>
+      </div>
+
+      <div class="detail-block">
+        <div class="detail-copy">
+          <h3>插入位置</h3>
+          <p>
+            HiCache++ 插在 shape 采样循环内部，不改 VAE、不改网格提取、不改纹理模型和渲染器。
+            这样下游仍然接收同样类型的 latent 输出，服务接口和资产导出格式不会改变。
+          </p>
+        </div>
+        <div class="detail-copy">
+          <h3>服务参数</h3>
+          <p>
+            并发服务默认以 hicache 模式启动 shape worker，并暴露 shape acceleration 参数。
+            本地脚本中 HiCache++ 采用 cache interval 3、history length 5；DMD 保留为实验选项，但不作为稳定服务默认。
+          </p>
+        </div>
+        <div class="detail-copy">
+          <h3>验证纪律</h3>
+          <p>
+            加速不是只看秒数，还要同时看采样耗时、白膜端到端耗时、显存峰值、面数/顶点数、水密性、
+            视觉质量，以及该白膜是否还能稳定进入纹理生成和数字孪生占位流程。
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="serving">
+      <div class="section-heading centered">
+        <p class="eyebrow">技术点二</p>
+        <h2>双 GPU 异步推理服务</h2>
+        <p>
+          这个系统的核心不是“用了 Redis”，而是把 Hunyuan3D 的长耗时、重显存 Pipeline 变成可排队、可审计、可恢复、可压测的服务。
+        </p>
+      </div>
+
+      <figure class="project-figure">
+        <img src="./resources/figures/cargo-forge3d-system-architecture.png" alt="CargoForge3D FastAPI Redis PostgreSQL 双 RTX 4080 推理服务架构">
+        <figcaption>
+          服务架构。系统采用流水线并行而不是模型并行：GPU0 常驻白膜 worker，GPU1 常驻纹理 worker，
+          Redis 负责阶段队列调度，PostgreSQL 负责可恢复的任务状态、事件和指标记录。
+        </figcaption>
+      </figure>
+
+      <div class="architecture-map" aria-label="CargoForge3D 服务架构">
+        <div class="arch-group client"><strong>客户端</strong><span>Web UI、批量上传、API 调用</span></div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-group gateway"><strong>FastAPI 网关</strong><span>提交、查询、取消、下载、指标接口</span></div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-group queues"><strong>Redis 优先级队列</strong><span>shape: high / normal / batch</span><span>texture: high / normal / batch</span></div>
+        <div class="arch-workers">
+          <div class="arch-group gpu"><strong>GPU0 白膜 Worker</strong><span>Hunyuan3D-2.1 shape pipeline</span><span>HiCache++ 加速</span></div>
+          <div class="arch-group gpu"><strong>GPU1 纹理 Worker</strong><span>PBR paint pipeline</span><span>4 views, 512 px, 低显存模式</span></div>
+        </div>
+        <div class="arch-group state"><strong>PostgreSQL 状态库</strong><span>jobs、events、artifacts、profiles、heartbeats</span></div>
+        <div class="arch-group observe"><strong>可观测与恢复</strong><span>Dashboard、Prometheus 指标、watchdog、清理脚本</span></div>
+      </div>
+
+      <div class="serving-grid">
+        <article class="text-panel">
+          <h3>任务生命周期</h3>
+          <p>
+            任务状态包含 submitted、queued shape、running shape、queued texture、running texture、packing、completed、
+            failed、cancelled 和 retrying。每次状态迁移都会落 PostgreSQL event，便于追踪失败原因。
+          </p>
+        </article>
+        <article class="text-panel">
+          <h3>背压与优先级</h3>
+          <p>
+            纹理是瓶颈阶段。系统显示 backlog 和 ETA，并通过优先级队列、排队上限和降级策略避免请求无限堆在 Redis 中。
+          </p>
+        </article>
+        <article class="text-panel">
+          <h3>鲁棒性</h3>
+          <p>
+            Worker 持续写心跳，watchdog 检测 stale worker 和僵尸任务；停止脚本支持优雅退出、队列清理和未完成任务丢弃，避免显存长期被占用。
+          </p>
+        </article>
+      </div>
+
+      <div class="capacity-panel">
+        <div><span class="metric-value">45.4 s</span><span class="metric-label">白膜 P95</span></div>
+        <div><span class="metric-value">321.3 s</span><span class="metric-label">纹理 P95，系统瓶颈</span></div>
+        <div><span class="metric-value">269</span><span class="metric-label">P95 折算带纹理资产/天</span></div>
+        <div><span class="metric-value">1903</span><span class="metric-label">P95 折算白膜资产/天</span></div>
+      </div>
+
+      <div class="runtime-panel">
+        <div class="runtime-copy">
+          <h3>并发版仓库与一键启动</h3>
+          <p>
+            当前能够启动 Redis 并发服务的本地主目录为：
+          </p>
+          <pre><code>D:\tencent Hunyuan3D-2.1(new version)\Hunyuan3D-2.1-main\Hunyuan3D-2.1-main</code></pre>
+          <p>
+            启动脚本会检查 Hunyuan3D conda Python、8091 端口、Redis 6379、PostgreSQL、GPU 空闲显存，
+            然后启动白膜 worker、纹理 worker、watchdog 和 FastAPI。
+          </p>
+          <pre><code>powershell.exe -ExecutionPolicy Bypass -File "D:\tencent Hunyuan3D-2.1(new version)\Hunyuan3D-2.1-main\Hunyuan3D-2.1-main\start_hy3d_concurrent.ps1"</code></pre>
+        </div>
+        <div class="runtime-copy">
+          <h3>状态库与可观测设计</h3>
+          <p>
+            Redis 只做队列，PostgreSQL 存长期状态，包括 job、event、artifact、profile、worker heartbeat 和用户限额。
+            这样服务异常后能恢复，也能给 Dashboard 提供可靠的数据源。
+          </p>
+          <pre><code>Logs: C:\Users\admin\Documents\New project\hy3d_concurrent_logs
+Jobs: C:\Users\admin\Documents\New project\hy3d_concurrent_jobs
+UI:   http://127.0.0.1:8091</code></pre>
+        </div>
+      </div>
+
+      <div class="status-table">
+        <div class="status-row header"><span>指标维度</span><span>记录内容</span><span>作用</span></div>
+        <div class="status-row"><span>延迟</span><span>Shape P50/P95/P99、Texture P50/P95/P99、E2E P95、queue wait</span><span>定位真实瓶颈，避免只凭单次运行感受判断。</span></div>
+        <div class="status-row"><span>GPU</span><span>显存峰值、利用率、worker busy/idle、CUDA OOM</span><span>保护双 4080 服务不被隐藏显存压力拖垮。</span></div>
+        <div class="status-row"><span>Redis</span><span>队列长度、ops/sec、latency、clients、slowlog、error replies</span><span>验证 Redis 是健康队列，而不是新的系统瓶颈。</span></div>
+        <div class="status-row"><span>任务</span><span>completed、failed、cancelled、retrying、artifact、profile JSON</span><span>让每个重建请求都可审计、可复现。</span></div>
+      </div>
+    </section>
+
+    <section class="section" id="lora">
+      <div class="section-heading">
+        <p class="eyebrow">技术点三</p>
+        <h2>教师模型蒸馏与领域 LoRA 微调</h2>
+        <p>
+          Hunyuan3D-3.1 效果更强但不可本地开源部署，因此本项目把它作为教师模型，生成件杂货图像对应的高质量 GLB 伪标签，
+          再把 GLB 转换为 Hunyuan3D-2.1 shape LoRA 可训练的数据格式。
+        </p>
+      </div>
+
+      <div class="diagram-card">
+        <div class="flow-title">
+          <span>数据蒸馏与预处理</span>
+          <strong>教师 GLB 到 shape 监督信号</strong>
+        </div>
+        <div class="flow-diagram dataset-flow">
+          <div class="flow-node input">港口件杂货图像</div>
+          <div class="flow-arrow">+</div>
+          <div class="flow-node input">教师模型 GLB</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node">网格审计与清洗</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node">Blender 24 视角条件渲染</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node">水密化与 SDF 采样</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node output">Rank-16 LoRA 微调</div>
+        </div>
+      </div>
+
+      <div class="two-column">
+        <article class="text-panel">
+          <h3>数据格式</h3>
+          <p>
+            每个样本会生成 geometry arrays、水密 OBJ、多视角 render conditions、source_condition.png、mesh.ply 和 transforms.json。
+            这一步把官网下载的 GLB 变成 Hunyuan3D-2.1-mesh-quality 项目可直接读取的训练样本。
+          </p>
+        </article>
+        <article class="text-panel">
+          <h3>A100 训练设置</h3>
+          <p>
+            训练使用 bf16、DINOv2-Large、Hunyuan3D-2.1 DiT 权重、LoRA rank 16、alpha 16、dropout 0.05、
+            TensorBoard loss 曲线、周期性 adapter 保存和 100 step 间隔验证。
+          </p>
+        </article>
+      </div>
+
+      <div class="metric-table">
+        <div><strong>教师数据</strong><span>100 组</span><em>真实堆场图像 + 高质量 GLB 伪标签</em></div>
+        <div><strong>适配方式</strong><span>Rank-16 LoRA</span><em>参数高效微调</em></div>
+        <div><strong>Chamfer-L1</strong><span>0.0511 → 0.0327</span><em>下降 36.0%</em></div>
+        <div><strong>F-score@0.05</strong><span>0.670 → 0.793</span><em>提升 12.3 个百分点</em></div>
+      </div>
+
+      <div class="status-table">
+        <div class="status-row header"><span>预处理步骤</span><span>生成文件</span><span>技术目的</span></div>
+        <div class="status-row"><span>样本审计</span><span>input image、teacher GLB、split_manifest.json</span><span>保证一个图像对应一个三维伪标签，并固定训练/验证划分。</span></div>
+        <div class="status-row"><span>Blender 渲染</span><span>24 视角 RGBA render、mesh.ply、transforms.json</span><span>重建原训练管线需要的多视角视觉条件。</span></div>
+        <div class="status-row"><span>几何转换</span><span>watertight.obj、surface.npz、sdf.npz</span><span>把教师 GLB 转换为 SDF 和表面监督信号。</span></div>
+        <div class="status-row"><span>训练选择</span><span>LoRA adapters、TensorBoard logs、validation GLBs</span><span>记录 loss，验证 checkpoint，并结合指标和视觉检查选择 adapter。</span></div>
+      </div>
+
+      <div class="detail-block">
+        <div class="detail-copy">
+          <h3>LoRA 实际改变什么</h3>
+          <p>
+            LoRA 只更新 shape 模型中的部分线性投影，基础模型大部分冻结。目标不是记住某一个货物，
+            而是让模型更偏向港口领域几何：长条钢构、堆叠货物、大平面结构和异形工业件。
+          </p>
+        </div>
+        <div class="detail-copy">
+          <h3>为什么用教师蒸馏</h3>
+          <p>
+            港口真实三维扫描成本高，难以大规模采集。更强的商业模型可以提供可扩展伪监督，
+            但这些 GLB 不直接当作真值，而是先过滤、清洗、水密化、采样和校验后再用于训练。
+          </p>
+        </div>
+        <div class="detail-copy">
+          <h3>如何判断有效</h3>
+          <p>
+            验证不只看 loss。Chamfer-L1 和 F-score 衡量几何对齐，GLB 可视化检查用于发现数值指标掩盖不了的失败模式，
+            例如细长结构塌陷、工业边缘过度平滑或局部几何粘连。
+          </p>
+        </div>
       </div>
     </section>
 
     <section class="section" id="results">
       <div class="section-heading">
         <p class="eyebrow">交互式结果</p>
-        <h2>港口件杂货三维资产展示</h2>
-        <p>点击缩略图切换样例；可在白膜和带纹理 GLB 之间切换，分别检查几何结构和 PBR 贴图效果。</p>
+        <h2>生成式件杂货三维资产展示</h2>
+        <p>
+          页面把白膜和带纹理结果分开展示。面试时可以直接说明：白膜质量、纹理可行性、显存峰值、耗时 profile 和 GLB 打包是分阶段评估的。
+        </p>
       </div>
       <div class="gallery-layout">
         <div class="result-viewer">
@@ -108,59 +524,97 @@
               <button class="segment" data-mode="white">白膜</button>
             </div>
           </div>
-          <model-viewer id="galleryModel" src="./resources/gallery/crate/textured.glb" alt="CargoForge 重建结果" camera-controls touch-action="pan-y" interaction-prompt="none" environment-image="legacy" camera-orbit="145deg 70deg auto" zoom-sensitivity="0.25" shadow-intensity="0.15" style="width:100%;height:100%;"></model-viewer>
+          <model-viewer id="galleryModel"
+            src="./resources/gallery/crate/textured.glb"
+            alt="CargoForge3D 重建结果"
+            camera-controls
+            touch-action="pan-y"
+            interaction-prompt="none"
+            environment-image="legacy"
+            camera-orbit="145deg 70deg auto"
+            zoom-sensitivity="0.25"
+            shadow-intensity="0.15"
+            style="width:100%;height:100%;">
+          </model-viewer>
         </div>
         <div class="case-panel">
-          <div id="caseMeta" class="case-meta"><span>Shape 25.3s</span><span>Texture 61.7s</span><span>617k faces</span></div>
+          <div id="caseMeta" class="case-meta">
+            <span>Shape 25.3 s</span>
+            <span>Texture 61.7 s</span>
+            <span>617k faces</span>
+          </div>
           <div class="thumbnail-list" id="galleryThumbs">
-            <button class="thumb active" data-case="crate"><img src="./resources/gallery/crate/input.png" alt="木箱"><span>木箱</span></button>
-            <button class="thumb" data-case="steel-stack"><img src="./resources/gallery/steel-stack/input.png" alt="钢结构堆叠件"><span>钢结构</span></button>
-            <button class="thumb" data-case="pipe-bundle"><img src="./resources/gallery/pipe-bundle/input.png" alt="管束"><span>管束</span></button>
-            <button class="thumb" data-case="frame-rack"><img src="./resources/gallery/frame-rack/input.png" alt="框架件"><span>框架件</span></button>
-            <button class="thumb" data-case="tarp-cargo"><img src="./resources/gallery/tarp-cargo/input.png" alt="篷布覆盖货物"><span>篷布货物</span></button>
+            <button class="thumb active" data-case="crate"><img src="./resources/gallery/crate/input.png" alt="木箱"><span>木箱件杂货</span></button>
+            <button class="thumb" data-case="steel-stack"><img src="./resources/gallery/steel-stack/input.png" alt="钢结构堆叠件"><span>钢结构堆叠件</span></button>
+            <button class="thumb" data-case="pipe-bundle"><img src="./resources/gallery/pipe-bundle/input.png" alt="管束件杂货"><span>管束件杂货</span></button>
+            <button class="thumb" data-case="frame-rack"><img src="./resources/gallery/frame-rack/input.png" alt="框架钢构件"><span>框架钢构件</span></button>
+            <button class="thumb" data-case="tarp-cargo"><img src="./resources/gallery/tarp-cargo/input.png" alt="篷布覆盖货物"><span>篷布覆盖货物</span></button>
           </div>
         </div>
       </div>
     </section>
 
-    <section class="section" id="adaptation">
+    <section class="section">
       <div class="section-heading centered">
-        <p class="eyebrow">领域适配</p>
-        <h2>商业教师模型监督下的件杂货 LoRA 微调</h2>
-        <p>开源 Hunyuan3D-2.1 对港口长条、堆叠、异形件杂货先验不足；CargoForge 用教师 GLB 数据构造三维监督，提升特定场景白膜质量。</p>
+        <p class="eyebrow">LoRA 可视化检查</p>
+        <h2>Base 模型与领域 Adapter 对比</h2>
+        <p>
+          LoRA 结果不是只看 loss 曲线，还要看验证样本的几何形态。这里保留可旋转 GLB，便于检查不同 checkpoint 的形状变化。
+        </p>
       </div>
       <div class="comparison-grid">
-        <div class="compare-card"><span>Hunyuan3D-2.1 Base</span><model-viewer src="./resources/lora/cargo-val/base.glb" camera-controls touch-action="pan-y" interaction-prompt="none" environment-image="legacy" camera-orbit="145deg 70deg auto"></model-viewer></div>
-        <div class="compare-card accent"><span>LoRA step 1500</span><model-viewer src="./resources/lora/cargo-val/lora1500.glb" camera-controls touch-action="pan-y" interaction-prompt="none" environment-image="legacy" camera-orbit="145deg 70deg auto"></model-viewer></div>
-        <div class="compare-card"><span>LoRA step 2000</span><model-viewer src="./resources/lora/cargo-val/lora2000.glb" camera-controls touch-action="pan-y" interaction-prompt="none" environment-image="legacy" camera-orbit="145deg 70deg auto"></model-viewer></div>
-      </div>
-      <div class="metric-table">
-        <div><strong>Chamfer-L1</strong><span>0.0511 -> 0.0327</span><em>下降 36.0%</em></div>
-        <div><strong>F-score@0.05</strong><span>0.670 -> 0.793</span><em>提升 12.3 个百分点</em></div>
-        <div><strong>LoRA rank</strong><span>Rank-16</span><em>参数高效微调</em></div>
-        <div><strong>数据制备</strong><span>GLB -> 水密化/SDF/多视角渲染</span><em>教师伪标签监督</em></div>
+        <div class="compare-card">
+          <span>Hunyuan3D-2.1 Base</span>
+          <model-viewer src="./resources/lora/cargo-val/base.glb" camera-controls touch-action="pan-y" interaction-prompt="none" environment-image="legacy" camera-orbit="145deg 70deg auto"></model-viewer>
+        </div>
+        <div class="compare-card accent">
+          <span>LoRA step 1500</span>
+          <model-viewer src="./resources/lora/cargo-val/lora1500.glb" camera-controls touch-action="pan-y" interaction-prompt="none" environment-image="legacy" camera-orbit="145deg 70deg auto"></model-viewer>
+        </div>
+        <div class="compare-card">
+          <span>LoRA step 2000</span>
+          <model-viewer src="./resources/lora/cargo-val/lora2000.glb" camera-controls touch-action="pan-y" interaction-prompt="none" environment-image="legacy" camera-orbit="145deg 70deg auto"></model-viewer>
+        </div>
       </div>
     </section>
 
-    <section class="section">
+    <section class="section" id="implementation">
       <div class="section-heading">
-        <p class="eyebrow">工程系统</p>
-        <h2>不只是一个 Gradio Demo</h2>
+        <p class="eyebrow">代码地图</p>
+        <h2>面试时值得展开讲的工程模块</h2>
       </div>
       <div class="stack-grid">
-        <div class="stack-card"><strong>FastAPI</strong><span>任务提交、状态查询、产物下载、Dashboard API</span></div>
-        <div class="stack-card"><strong>Redis</strong><span>shape/texture 队列、优先级、背压、清理</span></div>
-        <div class="stack-card"><strong>PostgreSQL</strong><span>任务、事件、产物、profile、Worker 心跳</span></div>
-        <div class="stack-card"><strong>GPU Worker</strong><span>GPU0 白膜常驻，GPU1 纹理常驻，阶段级 profile</span></div>
-        <div class="stack-card"><strong>可观测性</strong><span>P95 延迟、QPS、显存峰值、CPU/RAM、Redis 健康度</span></div>
-        <div class="stack-card"><strong>鲁棒性</strong><span>超时、取消、失败审计、僵尸任务清理</span></div>
+        <div class="stack-card"><strong>hy3d_concurrent/api_server.py</strong><span>FastAPI 网关、任务提交、健康检查、指标接口、Prometheus 风格输出。</span></div>
+        <div class="stack-card"><strong>hy3d_concurrent/worker.py</strong><span>GPU0 白膜 worker、GPU1 纹理 worker、HiCache++ 参数、CUDA 显存清理。</span></div>
+        <div class="stack-card"><strong>hy3d_concurrent/db.py</strong><span>PostgreSQL 任务状态、事件日志、产物记录、profile 与 worker heartbeat。</span></div>
+        <div class="stack-card"><strong>hy3d_concurrent/watchdog.py</strong><span>僵尸任务检测、stale worker 判断、失败恢复、队列清理与取消逻辑。</span></div>
+        <div class="stack-card"><strong>prepare_hunyuan_cargo_dataset.py</strong><span>GLB/图像清点、训练验证划分、Blender 渲染、水密化、SDF 采样和数据校验。</span></div>
+        <div class="stack-card"><strong>a100_train_cargo_lora.sh</strong><span>A100 LoRA 训练入口、本地权重路径、TensorBoard 日志、adapter 周期保存。</span></div>
+      </div>
+    </section>
+
+    <section class="section closing-section">
+      <div class="section-heading">
+        <p class="eyebrow">项目产出</p>
+        <h2>从模型适配到可运营的三维重建服务</h2>
+        <p>
+          CargoForge3D 覆盖现场采集、目标分割、白膜加速、低显存纹理生成、GLB/PBR 导出、任务审计、压测指标和领域微调。
+          项目面向烟台港件杂货数字孪生资产生成需求设计，重点解决真实港口场景中的吞吐、显存、鲁棒性和领域适配问题。
+        </p>
       </div>
     </section>
   </main>
 
   <footer class="footer">
-    <div><strong>CargoForge</strong><span>面向港口数字孪生资产的生成式三维重建系统。</span></div>
-    <div class="footer-links"><a href="./index.html">English</a><a href="./about.html">About</a><a href="https://github.com/cargo-forge3d/cargo-forge3d.github.io">GitHub</a></div>
+    <div>
+      <strong>CargoForge3D</strong>
+      <span>面向港口数字孪生资产的生成式三维重建与多 GPU 推理服务系统。</span>
+    </div>
+    <div class="footer-links">
+      <a href="./index.html">English</a>
+      <a href="./about.html">About</a>
+      <a href="https://github.com/cargo-forge3d/cargo-forge3d.github.io">GitHub</a>
+    </div>
   </footer>
 
   <script src="./static/js/site.js"></script>

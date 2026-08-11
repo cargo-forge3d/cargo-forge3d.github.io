@@ -3,66 +3,59 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="CargoForge is a generative 3D reconstruction system for port breakbulk cargo, combining Hunyuan3D-2.1, HiCache++ acceleration, dual-GPU asynchronous inference, and domain LoRA adaptation.">
-  <meta name="keywords" content="CargoForge, Hunyuan3D, Image-to-3D, Port, Breakbulk Cargo, Digital Twin, LoRA, HiCache, Redis, FastAPI">
-  <meta property="og:title" content="CargoForge: Generative 3D Reconstruction for Port Breakbulk Cargo">
-  <meta property="og:description" content="A port-oriented image-to-3D system for fast mesh asset generation, dual-GPU serving, and domain adaptation.">
-  <title>CargoForge: Generative 3D Reconstruction for Port Breakbulk Cargo</title>
+  <meta name="description" content="CargoForge3D is a port-oriented generative 3D reconstruction system based on Hunyuan3D-2.1, HiCache++ acceleration, dual-GPU asynchronous serving, and teacher-supervised LoRA adaptation.">
+  <meta name="keywords" content="CargoForge3D, Hunyuan3D, Image-to-3D, Port, Breakbulk Cargo, Digital Twin, HiCache++, Redis, PostgreSQL, FastAPI, LoRA">
+  <meta property="og:title" content="CargoForge3D: Port Breakbulk Cargo Reconstruction">
+  <meta property="og:description" content="A multi-GPU image-to-3D service for port digital twin mesh asset generation.">
+  <title>CargoForge3D: Port Breakbulk Cargo Reconstruction</title>
   <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
   <link rel="stylesheet" href="./static/css/site.css">
 </head>
 <body>
   <header class="site-header">
     <a class="brand" href="./index.html">
-      <span class="brand-mark">CF</span>
-      <span>CargoForge</span>
+      <span class="brand-mark">CF3D</span>
+      <span>CargoForge3D</span>
     </a>
     <nav class="nav-links" aria-label="Primary navigation">
-      <a href="#system">System</a>
-      <a href="#results">3D Results</a>
-      <a href="#adaptation">LoRA</a>
+      <a href="#overview">Overview</a>
+      <a href="#blueprint">Blueprint</a>
+      <a href="#base-model">Hunyuan3D</a>
+      <a href="#acceleration">HiCache++</a>
+      <a href="#serving">Serving</a>
+      <a href="#lora">LoRA</a>
+      <a href="#results">Results</a>
       <a href="./zh.html">中文</a>
       <a href="./about.html">About</a>
     </nav>
   </header>
 
   <main>
-    <section class="hero-section">
+    <section class="hero-section" id="overview">
       <div class="hero-copy">
-        <p class="eyebrow">Port digital twin assets from field images</p>
-        <h1>CargoForge: Generative 3D Reconstruction for Port Breakbulk Cargo</h1>
+        <p class="eyebrow">Port digital twin mesh assets</p>
+        <h1>Generative 3D reconstruction for breakbulk cargo.</h1>
         <p class="hero-lead">
-          CargoForge turns non-contact port cargo photos into reusable GLB/PBR mesh assets. It adapts
-          Hunyuan3D-2.1 for port breakbulk cargo, accelerates the shape stage with HiCache++, and serves
-          shape/texture generation through a dual-GPU asynchronous inference pipeline.
+          CargoForge3D converts field cargo images into GLB/PBR mesh assets for port digital twins.
+          The system starts from Tencent Hunyuan3D-2.1 and adds Windows deployment fixes, HiCache++
+          shape acceleration, dual-RTX4080 asynchronous serving, and teacher-supervised LoRA adaptation
+          for port cargo geometry.
         </p>
         <div class="hero-actions">
-          <a class="button primary" href="https://github.com/cargo-forge3d/cargo-forge3d.github.io">Website Repo</a>
-          <a class="button secondary" href="#results">Explore Meshes</a>
+          <a class="button primary" href="#serving">Read System Design</a>
+          <a class="button secondary" href="#results">Inspect Meshes</a>
         </div>
-        <div class="metric-strip" aria-label="Key metrics">
-          <div>
-            <span class="metric-value">2.8x</span>
-            <span class="metric-label">typical shape speedup</span>
-          </div>
-          <div>
-            <span class="metric-value">45.4s</span>
-            <span class="metric-label">shape P95</span>
-          </div>
-          <div>
-            <span class="metric-value">321.3s</span>
-            <span class="metric-label">texture P95</span>
-          </div>
-          <div>
-            <span class="metric-value">269/day</span>
-            <span class="metric-label">textured assets, 1 node</span>
-          </div>
+        <div class="metric-strip" aria-label="Key project metrics">
+          <div><span class="metric-value">2.8x</span><span class="metric-label">shape E2E acceleration</span></div>
+          <div><span class="metric-value">45.4s</span><span class="metric-label">Shape P95 on RTX4080</span></div>
+          <div><span class="metric-value">321.3s</span><span class="metric-label">Texture P95 on RTX4080</span></div>
+          <div><span class="metric-value">269/day</span><span class="metric-label">single-node textured throughput</span></div>
         </div>
       </div>
       <div class="hero-visual">
         <div class="viewer-shell">
           <div class="viewer-caption">
-            <span>Interactive GLB preview</span>
+            <span>Interactive generated GLB</span>
             <strong id="hero-case-name">Wooden cargo crate</strong>
           </div>
           <model-viewer id="heroModel"
@@ -75,67 +68,479 @@
             environment-image="legacy"
             camera-orbit="145deg 70deg auto"
             zoom-sensitivity="0.25"
-            shadow-intensity="0.25"
+            shadow-intensity="0.2"
             style="width:100%;height:100%;">
           </model-viewer>
         </div>
         <div class="input-card">
           <img id="hero-input" src="./resources/gallery/crate/input.png" alt="Input cargo photo">
-          <div>
-            <span>Input image</span>
-            <strong>field capture</strong>
-          </div>
+          <div><span>Input condition</span><strong>field image</strong></div>
         </div>
       </div>
     </section>
 
-    <section class="section compact" id="system">
+    <section class="section problem-section">
       <div class="section-heading">
-        <p class="eyebrow">Why this project exists</p>
-        <h2>From single-image demos to port-grade asset generation</h2>
+        <p class="eyebrow">Business motivation</p>
+        <h2>Why this is a service system, not a one-image demo</h2>
+        <p>
+          Breakbulk terminals need fast, non-contact reconstruction for cargo archiving, lifting simulation,
+          digital twin visualization, and approximate real-scale placement. The workflow is production-oriented:
+          capture, segment, reconstruct, scale, package, audit, and serve results to downstream twin platforms.
+        </p>
       </div>
-      <div class="three-grid">
-        <article class="feature-card">
-          <span class="card-index">01</span>
-          <h3>Fast white-mesh reconstruction</h3>
+      <div class="business-grid">
+        <article>
+          <h3>Operational requirement</h3>
           <p>
-            HiCache++ reuses historical velocity fields during DiT sampling and skips part of the expensive
-            forward passes. In typical RTX 4080 tests, 30-step shape sampling dropped from 40s to 7s, reducing
-            end-to-end shape latency from 67.3s to 24.0s.
+            A crane or yard event can trigger reconstruction. The first usable output is a white mesh for
+            placement and bounding-box estimation; the slower PBR texture stage can finish asynchronously.
           </p>
         </article>
-        <article class="feature-card">
-          <span class="card-index">02</span>
-          <h3>Dual-GPU asynchronous serving</h3>
+        <article>
+          <h3>Hardware constraint</h3>
           <p>
-            A FastAPI service uses Redis queues and PostgreSQL job state to split shape and texture into
-            two GPU-resident workers. GPU0 handles shape; GPU1 handles texture; the system records status,
-            events, artifacts, queue pressure, VRAM, CPU/RAM, and failures.
+            A single RTX4080 16GB can run the shape stage, but keeping both shape and texture models in one
+            process is fragile. The service separates stages into two GPU-resident workers.
           </p>
         </article>
-        <article class="feature-card">
-          <span class="card-index">03</span>
-          <h3>Domain LoRA adaptation</h3>
+        <article>
+          <h3>Domain gap</h3>
           <p>
-            Teacher GLB assets from a stronger commercial Hunyuan3D model are converted into watertight mesh,
-            SDF samples, and multi-view render conditions. Rank-16 LoRA improves validation Chamfer-L1 by
-            36.0% and F-score@0.05 by 12.3 percentage points.
+            Open Hunyuan3D-2.1 is not specialized for long beams, stacked steel, covered cargo, and irregular
+            breakbulk objects. Domain LoRA adaptation injects cargo-specific geometry priors.
           </p>
         </article>
       </div>
     </section>
 
-    <section class="section">
-      <div class="section-heading centered">
-        <p class="eyebrow">Pipeline</p>
-        <h2>Operational flow for breakbulk cargo reconstruction</h2>
+    <section class="section" id="blueprint">
+      <div class="section-heading">
+        <p class="eyebrow">System blueprint</p>
+        <h2>The full loop from port image capture to digital twin asset</h2>
+        <p>
+          The project is organized as a closed engineering loop. Each stage has a measurable contract:
+          what it receives, what it produces, which hardware it occupies, and how the next stage can resume
+          after interruption.
+        </p>
       </div>
-      <div class="pipeline">
-        <div class="pipeline-node"><strong>Capture</strong><span>camera / crane event / field image</span></div>
-        <div class="pipeline-node"><strong>Preprocess</strong><span>background removal and image filtering</span></div>
-        <div class="pipeline-node"><strong>Shape</strong><span>GPU0 Hunyuan3D-2.1 + HiCache++</span></div>
-        <div class="pipeline-node"><strong>Texture</strong><span>GPU1 PBR texture generation</span></div>
-        <div class="pipeline-node"><strong>Asset</strong><span>GLB export, profile, digital twin ingest</span></div>
+
+      <div class="blueprint-grid">
+        <article class="blueprint-step">
+          <span>01</span>
+          <h3>Field capture</h3>
+          <p>
+            Cargo photos come from port-side cameras, mobile phones, or event-triggered capture during crane
+            and yard operations. The capture target is practical: enough visual coverage for reconstruction,
+            not a carefully controlled studio dataset.
+          </p>
+          <small>Output: input image, capture metadata, optional scale reference.</small>
+        </article>
+        <article class="blueprint-step">
+          <span>02</span>
+          <h3>Image preprocessing</h3>
+          <p>
+            Background removal and image screening reduce interference from quay ground, vehicles, cargo frames,
+            and sky. This keeps Hunyuan3D focused on the cargo body rather than the surrounding port scene.
+          </p>
+          <small>Output: source condition image and cleaned prompt image.</small>
+        </article>
+        <article class="blueprint-step">
+          <span>03</span>
+          <h3>Fast white mesh</h3>
+          <p>
+            GPU0 runs Hunyuan3D-2.1 shape generation with HiCache++. This is the first useful asset in the
+            workflow because it can be placed into the digital twin before texture is ready.
+          </p>
+          <small>Output: white mesh, bounding box, mesh statistics, shape profile.</small>
+        </article>
+        <article class="blueprint-step">
+          <span>04</span>
+          <h3>Texture generation</h3>
+          <p>
+            GPU1 runs the paint pipeline in low-VRAM mode. Texture is slower and memory-heavy, so it is isolated
+            as a second queue stage instead of blocking shape generation.
+          </p>
+          <small>Output: textured mesh, PBR maps, texture profile.</small>
+        </article>
+        <article class="blueprint-step">
+          <span>05</span>
+          <h3>Asset packaging</h3>
+          <p>
+            The system stores GLB/OBJ artifacts, texture files, previews, and profile JSON under one job directory,
+            then persists artifact metadata into PostgreSQL.
+          </p>
+          <small>Output: downloadable GLB and auditable artifact record.</small>
+        </article>
+        <article class="blueprint-step">
+          <span>06</span>
+          <h3>Evaluation and iteration</h3>
+          <p>
+            Runtime metrics, queue wait time, P95 latency, GPU memory peaks, failure rate, mesh statistics, and
+            LoRA validation metrics feed back into system tuning.
+          </p>
+          <small>Output: dashboard metrics and training/evaluation records.</small>
+        </article>
+      </div>
+
+      <div class="talking-card">
+        <h3>Interview framing</h3>
+        <p>
+          A simple demo proves that a model can run once. CargoForge3D proves that a generative 3D model can be
+          adapted to a constrained industrial workflow: limited VRAM, long texture latency, concurrent requests,
+          recoverable jobs, measurable throughput, and domain-specific geometry adaptation.
+        </p>
+      </div>
+    </section>
+
+    <section class="section" id="base-model">
+      <div class="section-heading centered">
+        <p class="eyebrow">Base model</p>
+        <h2>How Hunyuan3D-2.1 is used</h2>
+        <p>
+          In this project, Hunyuan3D-2.1 is treated as two linked pipelines: a shape diffusion pipeline
+          that reconstructs a white mesh from one image, and a paint pipeline that generates multi-view
+          PBR textures and bakes them back to the mesh.
+        </p>
+      </div>
+
+      <figure class="project-figure">
+        <img src="./resources/figures/cargo-forge3d-algorithm-overview.png" alt="CargoForge3D algorithm overview with Hunyuan3D-2.1, HiCache++ and domain LoRA">
+        <figcaption>
+          Algorithm view. HiCache++ is inserted into the Hunyuan3D-2.1 shape DiT sampling loop, while the
+          cargo-domain LoRA adapter is trained from teacher-generated GLB supervision and plugged back into
+          the shape model.
+        </figcaption>
+      </figure>
+
+      <div class="diagram-card">
+        <div class="flow-title">
+          <span>Image-to-3D path</span>
+          <strong>single image to deployable GLB asset</strong>
+        </div>
+        <div class="flow-diagram hunyuan-flow">
+          <div class="flow-node input">Input image</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node">DINOv2 image encoder</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node">Shape DiT flow matching</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node">Shape VAE and mesh extraction</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node output">White mesh</div>
+          <div class="flow-node sub">Normal / position condition views</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node sub">Texture diffusion</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node sub">PBR baking and GLB packing</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node output">Textured GLB</div>
+        </div>
+      </div>
+
+      <div class="two-column">
+        <article class="text-panel">
+          <h3>Windows and local-model adaptation</h3>
+          <p>
+            The local build fixes Windows-specific runtime issues including CUDA device binding, TorchVision
+            compatibility, HuggingFace/hy3dgen local model lookup, dynamic module cache handling, texture-device
+            hardcoding, and safe shape/texture memory release.
+          </p>
+        </article>
+        <article class="text-panel">
+          <h3>Boundary of the claim</h3>
+          <p>
+            Hunyuan3D-2.1 remains a single-image shape model. This project does not claim multi-view shape generation.
+            Multi-GPU support is implemented as staged service parallelism, not tensor-parallel DiT execution.
+          </p>
+        </article>
+      </div>
+
+      <div class="detail-block">
+        <div class="detail-copy">
+          <h3>What happens inside the shape stage</h3>
+          <p>
+            The input image is encoded into visual conditions, and the shape DiT denoises latent shape features through
+            an iterative flow-matching process. After sampling, the shape VAE decodes the latent representation and the
+            mesh extraction step converts it into a white mesh. In port use, this stage is responsible for silhouette,
+            coarse topology, cargo proportions, and whether the object is plausible enough to enter a twin scene.
+          </p>
+        </div>
+        <div class="detail-copy">
+          <h3>What happens inside the texture stage</h3>
+          <p>
+            The texture pipeline renders geometry-aware condition views from the generated mesh, including normal and
+            position information, then uses the paint model to synthesize multi-view texture images. The final step is
+            back-projection and PBR baking. This stage is slower because it combines diffusion inference, rendering,
+            inpainting, texture fusion, and GLB repacking.
+          </p>
+        </div>
+        <div class="detail-copy">
+          <h3>Why the split matters</h3>
+          <p>
+            For a port system, white-mesh latency and texture latency have different business meanings. White mesh is
+            operational: it supports occupancy, approximate shape, and scale alignment. Texture is archival and visual:
+            it makes the asset recognizable. Splitting them allows the service to return useful intermediate results.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="acceleration">
+      <div class="section-heading">
+        <p class="eyebrow">Innovation 1</p>
+        <h2>HiCache++ acceleration for fast white-mesh generation</h2>
+        <p>
+          Port operators often need a fast white mesh before texture is available. HiCache++ targets the expensive
+          shape sampling loop by reusing historical velocity-field information and skipping selected DiT forward passes.
+        </p>
+      </div>
+
+      <div class="hicache-layout">
+        <div class="diagram-card">
+          <div class="flow-title">
+            <span>Cache-then-forecast sampling</span>
+            <strong>refresh the DiT, forecast intermediate states</strong>
+          </div>
+          <div class="cache-timeline" aria-label="HiCache++ sampling timeline">
+            <div class="tick full">DiT</div>
+            <div class="tick cache">forecast</div>
+            <div class="tick cache">forecast</div>
+            <div class="tick full">refresh</div>
+            <div class="tick cache">forecast</div>
+            <div class="tick cache">forecast</div>
+            <div class="tick full">DiT</div>
+          </div>
+          <p>
+            At refresh steps, the model evaluates the DiT normally. At cached steps, the sampler forecasts the next
+            latent state from historical trajectories. The acceleration is especially useful for shape-only preview,
+            digital twin placeholders, and queue throughput under frequent field captures.
+          </p>
+        </div>
+        <div class="speed-table">
+          <div class="speed-row header"><span>Stage</span><span>Baseline</span><span>HiCache++</span><span>Gain</span></div>
+          <div class="speed-row"><span>30-step sampling</span><span>40.0 s</span><span>7.0 s</span><span>5.7x</span></div>
+          <div class="speed-row"><span>Shape end-to-end</span><span>67.3 s</span><span>24.0 s</span><span>2.8x</span></div>
+          <div class="speed-row"><span>Serving mode</span><span>single request</span><span>GPU0 worker</span><span>resident</span></div>
+        </div>
+      </div>
+
+      <div class="detail-block">
+        <div class="detail-copy">
+          <h3>Where it is inserted</h3>
+          <p>
+            HiCache++ is inserted into the shape sampling loop, not into the VAE, mesh extraction, texture model,
+            or renderer. This keeps the output contract unchanged: the downstream mesh extraction and texture stages
+            still receive the same type of latent output.
+          </p>
+        </div>
+        <div class="detail-copy">
+          <h3>Serving parameters</h3>
+          <p>
+            The concurrent service starts the shape worker with shape acceleration enabled by default. The local
+            start script exposes the acceleration mode and uses cache interval 3 and history length 5 for the
+            HiCache++ path, while keeping DMD as an experimental alternative.
+          </p>
+        </div>
+        <div class="detail-copy">
+          <h3>Validation discipline</h3>
+          <p>
+            Acceleration is evaluated with runtime and quality signals together: sampling time, end-to-end shape time,
+            VRAM peak, face/vertex count, watertightness, visual inspection, and whether the white mesh remains usable
+            for downstream texture generation and twin placement.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="serving">
+      <div class="section-heading centered">
+        <p class="eyebrow">Innovation 2</p>
+        <h2>Dual-GPU asynchronous serving for low-VRAM full-chain reconstruction</h2>
+        <p>
+          The engineering bottleneck is not only inference speed. It is queueing, state persistence, GPU isolation,
+          failure recovery, and observability when multiple cargo reconstruction requests arrive.
+        </p>
+      </div>
+
+      <figure class="project-figure">
+        <img src="./resources/figures/cargo-forge3d-system-architecture.png" alt="CargoForge3D FastAPI Redis PostgreSQL dual RTX 4080 serving architecture">
+        <figcaption>
+          Serving architecture. The system uses pipeline parallelism rather than model parallelism: GPU0 keeps
+          the shape worker resident, GPU1 keeps the texture worker resident, Redis handles stage queues, and
+          PostgreSQL records durable job state.
+        </figcaption>
+      </figure>
+
+      <div class="architecture-map" aria-label="CargoForge3D serving architecture">
+        <div class="arch-group client"><strong>Clients</strong><span>Web UI, batch upload, API caller</span></div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-group gateway"><strong>FastAPI gateway</strong><span>submit, status, cancel, download, metrics</span></div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-group queues"><strong>Redis priority queues</strong><span>shape: high / normal / batch</span><span>texture: high / normal / batch</span></div>
+        <div class="arch-workers">
+          <div class="arch-group gpu"><strong>GPU0 shape worker</strong><span>Hunyuan3D-2.1 shape pipeline</span><span>HiCache++ acceleration</span></div>
+          <div class="arch-group gpu"><strong>GPU1 texture worker</strong><span>PBR paint pipeline</span><span>4 views, 512 px, low-VRAM mode</span></div>
+        </div>
+        <div class="arch-group state"><strong>PostgreSQL state store</strong><span>jobs, events, artifacts, profiles, heartbeats</span></div>
+        <div class="arch-group observe"><strong>Observability and recovery</strong><span>Dashboard, Prometheus metrics, watchdog, cleanup scripts</span></div>
+      </div>
+
+      <div class="serving-grid">
+        <article class="text-panel">
+          <h3>Job lifecycle</h3>
+          <p>
+            Jobs move through submitted, queued shape, running shape, queued texture, running texture, packing,
+            completed, failed, cancelled, or retrying states. Every transition is persisted as an event.
+          </p>
+        </article>
+        <article class="text-panel">
+          <h3>Backpressure instead of infinite waiting</h3>
+          <p>
+            Texture is the bottleneck stage. The system reports backlog and ETA, supports priority queues,
+            and prevents unlimited Redis accumulation when GPU memory or texture capacity is saturated.
+          </p>
+        </article>
+        <article class="text-panel">
+          <h3>Recovery and cleanup</h3>
+          <p>
+            Workers write PostgreSQL heartbeats. A watchdog detects stale workers, handles unfinished jobs,
+            and supports operator cleanup of queues and worker state when GPUs must be released.
+          </p>
+        </article>
+      </div>
+
+      <div class="capacity-panel">
+        <div><span class="metric-value">45.4 s</span><span class="metric-label">Shape P95</span></div>
+        <div><span class="metric-value">321.3 s</span><span class="metric-label">Texture P95, bottleneck stage</span></div>
+        <div><span class="metric-value">269</span><span class="metric-label">textured assets/day, P95-derived</span></div>
+        <div><span class="metric-value">1903</span><span class="metric-label">shape-only assets/day, P95-derived</span></div>
+      </div>
+
+      <div class="runtime-panel">
+        <div class="runtime-copy">
+          <h3>Runtime repository and one-click startup</h3>
+          <p>
+            The current concurrent-serving build is located at:
+          </p>
+          <pre><code>D:\tencent Hunyuan3D-2.1(new version)\Hunyuan3D-2.1-main\Hunyuan3D-2.1-main</code></pre>
+          <p>
+            The startup script checks the Hunyuan3D conda Python, API port 8091, Redis on 6379, PostgreSQL,
+            GPU free memory, then launches shape worker, texture worker, watchdog, and FastAPI.
+          </p>
+          <pre><code>powershell.exe -ExecutionPolicy Bypass -File "D:\tencent Hunyuan3D-2.1(new version)\Hunyuan3D-2.1-main\Hunyuan3D-2.1-main\start_hy3d_concurrent.ps1"</code></pre>
+        </div>
+        <div class="runtime-copy">
+          <h3>State and observability design</h3>
+          <p>
+            Redis is deliberately limited to queueing. PostgreSQL stores durable job state, job events,
+            artifacts, per-stage profiles, worker heartbeats, and user quotas. This makes the system recoverable
+            after crashes and gives the dashboard a database-backed source of truth.
+          </p>
+          <pre><code>Logs: C:\Users\admin\Documents\New project\hy3d_concurrent_logs
+Jobs: C:\Users\admin\Documents\New project\hy3d_concurrent_jobs
+UI:   http://127.0.0.1:8091</code></pre>
+        </div>
+      </div>
+
+      <div class="status-table">
+        <div class="status-row header"><span>Metric family</span><span>What is tracked</span><span>Why it matters</span></div>
+        <div class="status-row"><span>Latency</span><span>Shape P50/P95/P99, Texture P50/P95/P99, E2E P95, queue wait</span><span>Finds the real bottleneck instead of guessing from one run.</span></div>
+        <div class="status-row"><span>GPU</span><span>VRAM peak, utilization, worker busy/idle, CUDA OOM events</span><span>Protects the dual-4080 service from hidden memory pressure.</span></div>
+        <div class="status-row"><span>Redis</span><span>queue length, ops/sec, latency, clients, slowlog, error replies</span><span>Verifies that Redis is a healthy queue, not a silent bottleneck.</span></div>
+        <div class="status-row"><span>Jobs</span><span>completed, failed, cancelled, retrying, artifacts, profile JSON</span><span>Makes every reconstruction request auditable and reproducible.</span></div>
+      </div>
+    </section>
+
+    <section class="section" id="lora">
+      <div class="section-heading">
+        <p class="eyebrow">Innovation 3</p>
+        <h2>Teacher-supervised LoRA adaptation for port cargo geometry</h2>
+        <p>
+          Since stronger commercial Hunyuan3D versions cannot be deployed locally, the project uses them as teachers:
+          high-quality GLB pseudo labels are generated for real cargo images, then converted into Hunyuan3D-2.1
+          shape-supervision data for parameter-efficient adaptation.
+        </p>
+      </div>
+
+      <div class="diagram-card">
+        <div class="flow-title">
+          <span>Dataset distillation pipeline</span>
+          <strong>teacher GLB to Hunyuan3D shape supervision</strong>
+        </div>
+        <div class="flow-diagram dataset-flow">
+          <div class="flow-node input">Port cargo photo</div>
+          <div class="flow-arrow">+</div>
+          <div class="flow-node input">Teacher GLB</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node">Mesh audit and cleaning</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node">Blender 24-view condition render</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node">Watertight mesh and SDF sampling</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node output">Rank-16 LoRA training</div>
+        </div>
+      </div>
+
+      <div class="two-column">
+        <article class="text-panel">
+          <h3>Training format</h3>
+          <p>
+            Each sample becomes a preprocessed folder containing geometry arrays, watertight OBJ, multi-view
+            render conditions, source condition image, mesh.ply, and transforms.json. This matches the
+            mesh-quality LoRA training pipeline.
+          </p>
+        </article>
+        <article class="text-panel">
+          <h3>A100 training setup</h3>
+          <p>
+            The A100 run uses bf16 mixed precision, DINOv2-Large, Hunyuan3D-2.1 DiT weights, LoRA rank 16,
+            alpha 16, dropout 0.05, TensorBoard logging, periodic adapter export, and validation every 100 steps.
+          </p>
+        </article>
+      </div>
+
+      <div class="metric-table">
+        <div><strong>Teacher set</strong><span>100 pairs</span><em>field image + high-quality GLB pseudo label</em></div>
+        <div><strong>Adapter</strong><span>Rank-16 LoRA</span><em>parameter-efficient domain update</em></div>
+        <div><strong>Chamfer-L1</strong><span>0.0511 → 0.0327</span><em>36.0% lower</em></div>
+        <div><strong>F-score@0.05</strong><span>0.670 → 0.793</span><em>+12.3 percentage points</em></div>
+      </div>
+
+      <div class="status-table">
+        <div class="status-row header"><span>Preparation step</span><span>Generated files</span><span>Technical purpose</span></div>
+        <div class="status-row"><span>Source audit</span><span>input image, teacher GLB, split_manifest.json</span><span>Guarantees one image-to-mesh pair per sample and creates train/validation splits.</span></div>
+        <div class="status-row"><span>Blender rendering</span><span>24 RGBA render views, mesh.ply, transforms.json</span><span>Reconstructs the multi-view visual conditions expected by the original training pipeline.</span></div>
+        <div class="status-row"><span>Geometry conversion</span><span>watertight.obj, surface.npz, sdf.npz</span><span>Converts teacher GLB geometry into SDF and surface supervision.</span></div>
+        <div class="status-row"><span>Training and selection</span><span>LoRA adapters, TensorBoard logs, validation GLBs</span><span>Tracks loss, validates checkpoints, and selects adapters by metrics plus visual inspection.</span></div>
+      </div>
+
+      <div class="detail-block">
+        <div class="detail-copy">
+          <h3>What the LoRA actually changes</h3>
+          <p>
+            The LoRA adapter updates selected linear projections inside the shape model while keeping the base model
+            mostly frozen. The goal is not to memorize one cargo model, but to bias the shape generator toward
+            port-specific geometry: elongated steel members, stacked cargo, large flat faces, and irregular industrial parts.
+          </p>
+        </div>
+        <div class="detail-copy">
+          <h3>Why teacher distillation is used</h3>
+          <p>
+            Real ground-truth 3D scans are expensive in port scenes. Teacher GLBs from a stronger commercial model
+            provide scalable pseudo supervision. They are not treated as perfect truth; they are filtered, cleaned,
+            converted, and checked before training.
+          </p>
+        </div>
+        <div class="detail-copy">
+          <h3>How results are judged</h3>
+          <p>
+            The validation loop combines numerical geometry metrics with visual checks. Chamfer-L1 and F-score
+            quantify shape alignment, while GLB inspection catches failure modes that scalar loss can hide,
+            such as collapsed thin structures or over-smoothed industrial edges.
+          </p>
+        </div>
       </div>
     </section>
 
@@ -144,8 +549,8 @@
         <p class="eyebrow">Interactive results</p>
         <h2>Generated cargo assets</h2>
         <p>
-          Click a thumbnail to load a generated cargo mesh. Toggle between white mesh and textured GLB to inspect
-          geometry and PBR reconstruction separately.
+          Geometry and texture are inspected separately because the production pipeline is staged:
+          white mesh quality, texture feasibility, runtime profile, and final GLB packaging are evaluated as separate concerns.
         </p>
       </div>
       <div class="gallery-layout">
@@ -159,7 +564,7 @@
           </div>
           <model-viewer id="galleryModel"
             src="./resources/gallery/crate/textured.glb"
-            alt="CargoForge reconstruction"
+            alt="CargoForge3D reconstruction"
             camera-controls
             touch-action="pan-y"
             interaction-prompt="none"
@@ -172,8 +577,8 @@
         </div>
         <div class="case-panel">
           <div id="caseMeta" class="case-meta">
-            <span>Shape 25.3s</span>
-            <span>Texture 61.7s</span>
+            <span>Shape 25.3 s</span>
+            <span>Texture 61.7 s</span>
             <span>617k faces</span>
           </div>
           <div class="thumbnail-list" id="galleryThumbs">
@@ -187,13 +592,13 @@
       </div>
     </section>
 
-    <section class="section" id="adaptation">
+    <section class="section">
       <div class="section-heading centered">
-        <p class="eyebrow">Domain adaptation</p>
-        <h2>Teacher-supervised LoRA for port cargo geometry</h2>
+        <p class="eyebrow">LoRA visual check</p>
+        <h2>Base model versus domain adapters</h2>
         <p>
-          Hunyuan3D-2.1 is open-source but weak on long, stacked, and irregular port cargo. CargoForge builds
-          a teacher-labeled cargo dataset and adapts the shape model with LoRA.
+          The LoRA comparison is shown as interactive mesh panels so reviewers can rotate the same validation item
+          and inspect geometry changes across checkpoints.
         </p>
       </div>
       <div class="comparison-grid">
@@ -210,34 +615,41 @@
           <model-viewer src="./resources/lora/cargo-val/lora2000.glb" camera-controls touch-action="pan-y" interaction-prompt="none" environment-image="legacy" camera-orbit="145deg 70deg auto"></model-viewer>
         </div>
       </div>
-      <div class="metric-table">
-        <div><strong>Chamfer-L1</strong><span>0.0511 -> 0.0327</span><em>36.0% lower</em></div>
-        <div><strong>F-score@0.05</strong><span>0.670 -> 0.793</span><em>+12.3 points</em></div>
-        <div><strong>LoRA rank</strong><span>Rank-16</span><em>parameter-efficient</em></div>
-        <div><strong>Dataset prep</strong><span>GLB -> watertight/SDF/render</span><em>teacher supervision</em></div>
+    </section>
+
+    <section class="section" id="implementation">
+      <div class="section-heading">
+        <p class="eyebrow">Implementation map</p>
+        <h2>Code modules worth discussing in an interview</h2>
+      </div>
+      <div class="stack-grid">
+        <div class="stack-card"><strong>hy3d_concurrent/api_server.py</strong><span>FastAPI gateway, job submission, health checks, metrics JSON, Prometheus endpoint.</span></div>
+        <div class="stack-card"><strong>hy3d_concurrent/worker.py</strong><span>GPU0 shape worker, GPU1 texture worker, HiCache++ options, texture compile experiment, CUDA cleanup.</span></div>
+        <div class="stack-card"><strong>hy3d_concurrent/db.py</strong><span>PostgreSQL job store, events, artifacts, profiles, worker heartbeat queries, metrics snapshots.</span></div>
+        <div class="stack-card"><strong>hy3d_concurrent/watchdog.py</strong><span>Stale worker detection, graceful stop signal, force fallback, and safe requeue/cancel handling.</span></div>
+        <div class="stack-card"><strong>prepare_hunyuan_cargo_dataset.py</strong><span>GLB/image inventory, train/val split, Blender rendering, watertight/SDF generation, validation reports.</span></div>
+        <div class="stack-card"><strong>a100_train_cargo_lora.sh</strong><span>A100 LoRA training wrapper with local paths, TensorBoard logging, adapter export, and validation settings.</span></div>
       </div>
     </section>
 
-    <section class="section">
+    <section class="section closing-section">
       <div class="section-heading">
-        <p class="eyebrow">Serving stack</p>
-        <h2>What makes it more than a demo</h2>
-      </div>
-      <div class="stack-grid">
-        <div class="stack-card"><strong>FastAPI</strong><span>submission, status query, artifacts, dashboard APIs</span></div>
-        <div class="stack-card"><strong>Redis</strong><span>shape queue, texture queue, priority, backpressure, cleanup</span></div>
-        <div class="stack-card"><strong>PostgreSQL</strong><span>jobs, events, artifacts, profiles, worker heartbeats</span></div>
-        <div class="stack-card"><strong>GPU workers</strong><span>GPU0 shape resident, GPU1 texture resident, profile logging</span></div>
-        <div class="stack-card"><strong>Observability</strong><span>P95 latency, QPS, VRAM, CPU/RAM, Redis health, error rate</span></div>
-        <div class="stack-card"><strong>Recovery</strong><span>timeouts, cancellation, stale job cleanup, failure audit trail</span></div>
+        <p class="eyebrow">Project outcome</p>
+        <h2>From model adaptation to an operable reconstruction service</h2>
+        <p>
+          CargoForge3D demonstrates an end-to-end engineering path for port cargo assets: field capture,
+          segmentation and preprocessing, accelerated white-mesh generation, low-VRAM texture serving,
+          GLB/PBR export, job audit, capacity profiling, and domain adaptation. The work is connected to a
+          Yantai Port digital twin reconstruction project and is designed around real terminal constraints.
+        </p>
       </div>
     </section>
   </main>
 
   <footer class="footer">
     <div>
-      <strong>CargoForge</strong>
-      <span>Generative 3D reconstruction for port digital twin assets.</span>
+      <strong>CargoForge3D</strong>
+      <span>Generative 3D reconstruction and multi-GPU serving for port digital twin mesh assets.</span>
     </div>
     <div class="footer-links">
       <a href="./zh.html">中文</a>

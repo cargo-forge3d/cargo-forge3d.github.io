@@ -3,14 +3,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>About CargoForge</title>
+  <meta name="description" content="About CargoForge3D, a port breakbulk cargo image-to-3D reconstruction and multi-GPU serving project.">
+  <title>About CargoForge3D</title>
   <link rel="stylesheet" href="./static/css/site.css">
 </head>
 <body>
   <header class="site-header">
     <a class="brand" href="./index.html">
-      <span class="brand-mark">CF</span>
-      <span>CargoForge</span>
+      <span class="brand-mark">CF3D</span>
+      <span>CargoForge3D</span>
     </a>
     <nav class="nav-links" aria-label="Primary navigation">
       <a href="./index.html">English</a>
@@ -22,11 +23,11 @@
   <main class="about-main">
     <section class="about-hero">
       <p class="eyebrow">About the project</p>
-      <h1>CargoForge is built for interview-visible engineering depth.</h1>
+      <h1>A project page for interview-visible engineering depth.</h1>
       <p>
-        This website presents a port-oriented 3D reconstruction system that connects algorithmic adaptation,
-        low-VRAM inference, multi-GPU serving, and digital twin asset production. The goal is to make the
-        project understandable to engineers and interviewers without hiding the system details behind a demo.
+        CargoForge3D presents a port-oriented image-to-3D system that connects algorithmic acceleration,
+        low-VRAM inference, multi-GPU serving, domain data preparation, and digital twin asset production.
+        The page is intentionally written like a technical project report rather than a marketing landing page.
       </p>
     </section>
 
@@ -35,36 +36,36 @@
         <article>
           <h2>Project context</h2>
           <p>
-            The work is motivated by breakbulk cargo terminals, where timber crates, steel structures, pipe bundles,
-            and irregular machinery components need to be reconstructed as reusable 3D assets. The system focuses on
-            non-contact image capture, fast mesh generation, GLB/PBR export, and digital twin ingestion.
+            The work is motivated by breakbulk cargo terminals, where wooden crates, steel structures, pipe bundles,
+            covered cargo, and irregular machinery components need to be reconstructed as reusable 3D assets.
+            The target workflow is non-contact image capture, mesh generation, GLB/PBR export, and digital twin ingestion.
           </p>
         </article>
         <article>
           <h2>Engineering scope</h2>
           <p>
-            CargoForge is not a single notebook pipeline. It includes Windows adaptation for Hunyuan3D-2.1, local model
-            cache handling, HiCache++ acceleration, low-VRAM texture experiments, FastAPI serving, Redis queues,
-            PostgreSQL job state, dual-GPU workers, failure cleanup, and pressure-test metrics.
+            The implementation includes Windows adaptation for Hunyuan3D-2.1, local model cache handling,
+            HiCache++ shape acceleration, low-VRAM texture experiments, FastAPI serving, Redis queues,
+            PostgreSQL job state, dual-GPU workers, watchdog recovery, and pressure-test metrics.
           </p>
         </article>
         <article>
           <h2>Research scope</h2>
           <p>
-            The domain adaptation part converts teacher-generated GLB assets into watertight meshes, SDF samples, and
-            multi-view render conditions. Rank-16 LoRA is used to improve open-source Hunyuan3D-2.1 on cargo-specific
-            geometry while keeping the model adaptation lightweight.
+            The domain adaptation component converts teacher-generated GLB assets into watertight meshes,
+            SDF samples, and multi-view render conditions. Rank-16 LoRA is used to improve open-source
+            Hunyuan3D-2.1 on cargo-specific geometry.
           </p>
         </article>
         <article>
           <h2>Author</h2>
           <p>
-            Developed by Zezhong Li, Tianjin University. The system is part of a broader effort on industrial AI,
-            generative 3D reconstruction, and port digital twin asset generation.
+            Developed by Zezhong Li, Tianjin University. The project is part of a broader effort on industrial AI,
+            generative 3D reconstruction, GPU inference services, and port digital twin asset generation.
           </p>
           <div class="contact-list">
             <a href="https://github.com/cargo-forge3d">GitHub: cargo-forge3d</a>
-            <a href="mailto:cargoforge3d@outlook.com">cargoforge3d@outlook.com</a>
+            <a href="https://github.com/lzz19980125/Hunyuan3D-2.1-Windows">Hunyuan3D Windows fork</a>
           </div>
         </article>
       </div>
@@ -76,17 +77,50 @@
         <h2>Stack covered by this project</h2>
       </div>
       <div class="keyword-cloud">
-        <span>Hunyuan3D-2.1</span><span>Image-to-3D</span><span>DiT diffusion</span><span>HiCache++</span>
-        <span>PyTorch</span><span>PEFT/LoRA</span><span>SDF sampling</span><span>Watertight mesh</span>
-        <span>GLB/PBR</span><span>Blender/bpy</span><span>FastAPI</span><span>Redis</span>
-        <span>PostgreSQL</span><span>GPU workers</span><span>VRAM profiling</span><span>Pressure testing</span>
+        <span>Hunyuan3D-2.1</span>
+        <span>Image-to-3D</span>
+        <span>DiT diffusion</span>
+        <span>Flow matching</span>
+        <span>HiCache++</span>
+        <span>PyTorch</span>
+        <span>CUDA</span>
+        <span>VRAM profiling</span>
+        <span>PEFT / LoRA</span>
+        <span>DINOv2</span>
+        <span>SDF sampling</span>
+        <span>Watertight mesh</span>
+        <span>GLB / PBR</span>
+        <span>Blender / bpy</span>
+        <span>FastAPI</span>
+        <span>Redis</span>
+        <span>PostgreSQL</span>
+        <span>GPU workers</span>
+        <span>Prometheus metrics</span>
+        <span>Pressure testing</span>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-heading">
+        <p class="eyebrow">中文说明</p>
+        <h2>这个页面服务于面试场景</h2>
+        <p>
+          面试官通常不会只关心“模型跑没跑通”，而会追问业务约束、显存瓶颈、并发调度、指标口径、失败恢复和数据闭环。
+          CargoForge3D 页面把这些点拆开呈现，便于围绕系统设计、深度学习推理、数据制备和微调实验展开讨论。
+        </p>
       </div>
     </section>
   </main>
 
   <footer class="footer">
-    <div><strong>CargoForge</strong><span>Generative 3D reconstruction for port digital twin assets.</span></div>
-    <div class="footer-links"><a href="./index.html">Home</a><a href="./zh.html">中文</a></div>
+    <div>
+      <strong>CargoForge3D</strong>
+      <span>Generative 3D reconstruction and multi-GPU serving for port digital twin mesh assets.</span>
+    </div>
+    <div class="footer-links">
+      <a href="./index.html">Home</a>
+      <a href="./zh.html">中文</a>
+    </div>
   </footer>
 </body>
 </html>
