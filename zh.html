@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="CargoForge 是面向港口件杂货数字孪生资产生成的生成式三维重建系统，结合 Hunyuan3D-2.1、HiCache++、双 GPU 异步推理服务与领域 LoRA 微调。">
+  <title>CargoForge：面向港口件杂货的生成式三维重建系统</title>
+  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
+  <link rel="stylesheet" href="./static/css/site.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="./zh.html">
+      <span class="brand-mark">CF</span>
+      <span>CargoForge</span>
+    </a>
+    <nav class="nav-links" aria-label="主导航">
+      <a href="#system">系统</a>
+      <a href="#results">三维结果</a>
+      <a href="#adaptation">LoRA</a>
+      <a href="./index.html">English</a>
+      <a href="./about.html">About</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero-section">
+      <div class="hero-copy">
+        <p class="eyebrow">港口现场图像到数字孪生 Mesh 资产</p>
+        <h1>CargoForge：面向港口件杂货的生成式三维重建与多 GPU 推理服务系统</h1>
+        <p class="hero-lead">
+          CargoForge 面向件杂货码头数字孪生中的资产快速建模需求，将现场非接触图像转换为可入库的 GLB/PBR
+          三维资产。系统基于 Hunyuan3D-2.1，集成 HiCache++ 白膜加速、双 RTX 4080 异步推理服务以及领域 LoRA 微调。
+        </p>
+        <div class="hero-actions">
+          <a class="button primary" href="https://github.com/cargo-forge3d/cargo-forge3d.github.io">网页仓库</a>
+          <a class="button secondary" href="#results">查看三维结果</a>
+        </div>
+        <div class="metric-strip" aria-label="核心指标">
+          <div><span class="metric-value">2.8x</span><span class="metric-label">典型白膜加速</span></div>
+          <div><span class="metric-value">45.4s</span><span class="metric-label">Shape P95</span></div>
+          <div><span class="metric-value">321.3s</span><span class="metric-label">Texture P95</span></div>
+          <div><span class="metric-value">269/天</span><span class="metric-label">单节点带纹理资产</span></div>
+        </div>
+      </div>
+      <div class="hero-visual">
+        <div class="viewer-shell">
+          <div class="viewer-caption"><span>交互式 GLB 预览</span><strong id="hero-case-name">木箱件杂货</strong></div>
+          <model-viewer id="heroModel" src="./resources/gallery/crate/textured.glb" alt="生成的件杂货三维模型" loading="eager" camera-controls interaction-prompt="none" touch-action="pan-y" environment-image="legacy" camera-orbit="145deg 70deg auto" zoom-sensitivity="0.25" shadow-intensity="0.25" style="width:100%;height:100%;"></model-viewer>
+        </div>
+        <div class="input-card">
+          <img id="hero-input" src="./resources/gallery/crate/input.png" alt="输入货物图像">
+          <div><span>输入图像</span><strong>现场采集</strong></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section compact" id="system">
+      <div class="section-heading">
+        <p class="eyebrow">业务闭环</p>
+        <h2>从单图生成 Demo 到港口资产生成服务</h2>
+      </div>
+      <div class="three-grid">
+        <article class="feature-card">
+          <span class="card-index">01</span>
+          <h3>白膜生成加速</h3>
+          <p>移植 HiCache++ 缓存外推机制，在 DiT 采样过程中复用历史速度场并跳过部分前向计算。RTX 4080 上典型样本 30 步采样由 40s 降至 7s，白膜端到端由 67.3s 降至 24.0s。</p>
+        </article>
+        <article class="feature-card">
+          <span class="card-index">02</span>
+          <h3>双 GPU 异步服务</h3>
+          <p>基于 FastAPI、Redis、PostgreSQL 构建 shape/texture 两级队列，将 GPU0 和 GPU1 分别作为白膜与纹理常驻 Worker，并落库记录任务状态、事件、产物、显存、CPU/RAM 与失败信息。</p>
+        </article>
+        <article class="feature-card">
+          <span class="card-index">03</span>
+          <h3>领域 LoRA 微调</h3>
+          <p>用更强的商业教师模型生成件杂货 GLB 伪标签，经过网格清洗、水密化、SDF 采样与多视角条件渲染后做 Rank-16 LoRA 微调，验证集 Chamfer-L1 下降 36.0%，F-score@0.05 提升 12.3 个百分点。</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-heading centered">
+        <p class="eyebrow">推理流程</p>
+        <h2>面向件杂货码头的重建流水线</h2>
+      </div>
+      <div class="pipeline">
+        <div class="pipeline-node"><strong>采集</strong><span>工业相机 / 吊装事件 / 现场图片</span></div>
+        <div class="pipeline-node"><strong>预处理</strong><span>背景剔除与图像筛选</span></div>
+        <div class="pipeline-node"><strong>白膜</strong><span>GPU0 + Hunyuan3D-2.1 + HiCache++</span></div>
+        <div class="pipeline-node"><strong>纹理</strong><span>GPU1 PBR 纹理生成</span></div>
+        <div class="pipeline-node"><strong>资产</strong><span>GLB 导出、profile、孪生平台入库</span></div>
+      </div>
+    </section>
+
+    <section class="section" id="results">
+      <div class="section-heading">
+        <p class="eyebrow">交互式结果</p>
+        <h2>港口件杂货三维资产展示</h2>
+        <p>点击缩略图切换样例；可在白膜和带纹理 GLB 之间切换，分别检查几何结构和 PBR 贴图效果。</p>
+      </div>
+      <div class="gallery-layout">
+        <div class="result-viewer">
+          <div class="toolbar">
+            <span id="gallery-title">木箱件杂货</span>
+            <div class="segmented" role="group" aria-label="模型模式">
+              <button class="segment active" data-mode="textured">带纹理</button>
+              <button class="segment" data-mode="white">白膜</button>
+            </div>
+          </div>
+          <model-viewer id="galleryModel" src="./resources/gallery/crate/textured.glb" alt="CargoForge 重建结果" camera-controls touch-action="pan-y" interaction-prompt="none" environment-image="legacy" camera-orbit="145deg 70deg auto" zoom-sensitivity="0.25" shadow-intensity="0.15" style="width:100%;height:100%;"></model-viewer>
+        </div>
+        <div class="case-panel">
+          <div id="caseMeta" class="case-meta"><span>Shape 25.3s</span><span>Texture 61.7s</span><span>617k faces</span></div>
+          <div class="thumbnail-list" id="galleryThumbs">
+            <button class="thumb active" data-case="crate"><img src="./resources/gallery/crate/input.png" alt="木箱"><span>木箱</span></button>
+            <button class="thumb" data-case="steel-stack"><img src="./resources/gallery/steel-stack/input.png" alt="钢结构堆叠件"><span>钢结构</span></button>
+            <button class="thumb" data-case="pipe-bundle"><img src="./resources/gallery/pipe-bundle/input.png" alt="管束"><span>管束</span></button>
+            <button class="thumb" data-case="frame-rack"><img src="./resources/gallery/frame-rack/input.png" alt="框架件"><span>框架件</span></button>
+            <button class="thumb" data-case="tarp-cargo"><img src="./resources/gallery/tarp-cargo/input.png" alt="篷布覆盖货物"><span>篷布货物</span></button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="adaptation">
+      <div class="section-heading centered">
+        <p class="eyebrow">领域适配</p>
+        <h2>商业教师模型监督下的件杂货 LoRA 微调</h2>
+        <p>开源 Hunyuan3D-2.1 对港口长条、堆叠、异形件杂货先验不足；CargoForge 用教师 GLB 数据构造三维监督，提升特定场景白膜质量。</p>
+      </div>
+      <div class="comparison-grid">
+        <div class="compare-card"><span>Hunyuan3D-2.1 Base</span><model-viewer src="./resources/lora/cargo-val/base.glb" camera-controls touch-action="pan-y" interaction-prompt="none" environment-image="legacy" camera-orbit="145deg 70deg auto"></model-viewer></div>
+        <div class="compare-card accent"><span>LoRA step 1500</span><model-viewer src="./resources/lora/cargo-val/lora1500.glb" camera-controls touch-action="pan-y" interaction-prompt="none" environment-image="legacy" camera-orbit="145deg 70deg auto"></model-viewer></div>
+        <div class="compare-card"><span>LoRA step 2000</span><model-viewer src="./resources/lora/cargo-val/lora2000.glb" camera-controls touch-action="pan-y" interaction-prompt="none" environment-image="legacy" camera-orbit="145deg 70deg auto"></model-viewer></div>
+      </div>
+      <div class="metric-table">
+        <div><strong>Chamfer-L1</strong><span>0.0511 -> 0.0327</span><em>下降 36.0%</em></div>
+        <div><strong>F-score@0.05</strong><span>0.670 -> 0.793</span><em>提升 12.3 个百分点</em></div>
+        <div><strong>LoRA rank</strong><span>Rank-16</span><em>参数高效微调</em></div>
+        <div><strong>数据制备</strong><span>GLB -> 水密化/SDF/多视角渲染</span><em>教师伪标签监督</em></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-heading">
+        <p class="eyebrow">工程系统</p>
+        <h2>不只是一个 Gradio Demo</h2>
+      </div>
+      <div class="stack-grid">
+        <div class="stack-card"><strong>FastAPI</strong><span>任务提交、状态查询、产物下载、Dashboard API</span></div>
+        <div class="stack-card"><strong>Redis</strong><span>shape/texture 队列、优先级、背压、清理</span></div>
+        <div class="stack-card"><strong>PostgreSQL</strong><span>任务、事件、产物、profile、Worker 心跳</span></div>
+        <div class="stack-card"><strong>GPU Worker</strong><span>GPU0 白膜常驻，GPU1 纹理常驻，阶段级 profile</span></div>
+        <div class="stack-card"><strong>可观测性</strong><span>P95 延迟、QPS、显存峰值、CPU/RAM、Redis 健康度</span></div>
+        <div class="stack-card"><strong>鲁棒性</strong><span>超时、取消、失败审计、僵尸任务清理</span></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div><strong>CargoForge</strong><span>面向港口数字孪生资产的生成式三维重建系统。</span></div>
+    <div class="footer-links"><a href="./index.html">English</a><a href="./about.html">About</a><a href="https://github.com/cargo-forge3d/cargo-forge3d.github.io">GitHub</a></div>
+  </footer>
+
+  <script src="./static/js/site.js"></script>
+</body>
+</html>

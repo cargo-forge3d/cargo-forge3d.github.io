@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="CargoForge is a generative 3D reconstruction system for port breakbulk cargo, combining Hunyuan3D-2.1, HiCache++ acceleration, dual-GPU asynchronous inference, and domain LoRA adaptation.">
+  <meta name="keywords" content="CargoForge, Hunyuan3D, Image-to-3D, Port, Breakbulk Cargo, Digital Twin, LoRA, HiCache, Redis, FastAPI">
+  <meta property="og:title" content="CargoForge: Generative 3D Reconstruction for Port Breakbulk Cargo">
+  <meta property="og:description" content="A port-oriented image-to-3D system for fast mesh asset generation, dual-GPU serving, and domain adaptation.">
+  <title>CargoForge: Generative 3D Reconstruction for Port Breakbulk Cargo</title>
+  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
+  <link rel="stylesheet" href="./static/css/site.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="./index.html">
+      <span class="brand-mark">CF</span>
+      <span>CargoForge</span>
+    </a>
+    <nav class="nav-links" aria-label="Primary navigation">
+      <a href="#system">System</a>
+      <a href="#results">3D Results</a>
+      <a href="#adaptation">LoRA</a>
+      <a href="./zh.html">中文</a>
+      <a href="./about.html">About</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero-section">
+      <div class="hero-copy">
+        <p class="eyebrow">Port digital twin assets from field images</p>
+        <h1>CargoForge: Generative 3D Reconstruction for Port Breakbulk Cargo</h1>
+        <p class="hero-lead">
+          CargoForge turns non-contact port cargo photos into reusable GLB/PBR mesh assets. It adapts
+          Hunyuan3D-2.1 for port breakbulk cargo, accelerates the shape stage with HiCache++, and serves
+          shape/texture generation through a dual-GPU asynchronous inference pipeline.
+        </p>
+        <div class="hero-actions">
+          <a class="button primary" href="https://github.com/cargo-forge3d/cargo-forge3d.github.io">Website Repo</a>
+          <a class="button secondary" href="#results">Explore Meshes</a>
+        </div>
+        <div class="metric-strip" aria-label="Key metrics">
+          <div>
+            <span class="metric-value">2.8x</span>
+            <span class="metric-label">typical shape speedup</span>
+          </div>
+          <div>
+            <span class="metric-value">45.4s</span>
+            <span class="metric-label">shape P95</span>
+          </div>
+          <div>
+            <span class="metric-value">321.3s</span>
+            <span class="metric-label">texture P95</span>
+          </div>
+          <div>
+            <span class="metric-value">269/day</span>
+            <span class="metric-label">textured assets, 1 node</span>
+          </div>
+        </div>
+      </div>
+      <div class="hero-visual">
+        <div class="viewer-shell">
+          <div class="viewer-caption">
+            <span>Interactive GLB preview</span>
+            <strong id="hero-case-name">Wooden cargo crate</strong>
+          </div>
+          <model-viewer id="heroModel"
+            src="./resources/gallery/crate/textured.glb"
+            alt="Generated cargo mesh"
+            loading="eager"
+            camera-controls
+            interaction-prompt="none"
+            touch-action="pan-y"
+            environment-image="legacy"
+            camera-orbit="145deg 70deg auto"
+            zoom-sensitivity="0.25"
+            shadow-intensity="0.25"
+            style="width:100%;height:100%;">
+          </model-viewer>
+        </div>
+        <div class="input-card">
+          <img id="hero-input" src="./resources/gallery/crate/input.png" alt="Input cargo photo">
+          <div>
+            <span>Input image</span>
+            <strong>field capture</strong>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section compact" id="system">
+      <div class="section-heading">
+        <p class="eyebrow">Why this project exists</p>
+        <h2>From single-image demos to port-grade asset generation</h2>
+      </div>
+      <div class="three-grid">
+        <article class="feature-card">
+          <span class="card-index">01</span>
+          <h3>Fast white-mesh reconstruction</h3>
+          <p>
+            HiCache++ reuses historical velocity fields during DiT sampling and skips part of the expensive
+            forward passes. In typical RTX 4080 tests, 30-step shape sampling dropped from 40s to 7s, reducing
+            end-to-end shape latency from 67.3s to 24.0s.
+          </p>
+        </article>
+        <article class="feature-card">
+          <span class="card-index">02</span>
+          <h3>Dual-GPU asynchronous serving</h3>
+          <p>
+            A FastAPI service uses Redis queues and PostgreSQL job state to split shape and texture into
+            two GPU-resident workers. GPU0 handles shape; GPU1 handles texture; the system records status,
+            events, artifacts, queue pressure, VRAM, CPU/RAM, and failures.
+          </p>
+        </article>
+        <article class="feature-card">
+          <span class="card-index">03</span>
+          <h3>Domain LoRA adaptation</h3>
+          <p>
+            Teacher GLB assets from a stronger commercial Hunyuan3D model are converted into watertight mesh,
+            SDF samples, and multi-view render conditions. Rank-16 LoRA improves validation Chamfer-L1 by
+            36.0% and F-score@0.05 by 12.3 percentage points.
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-heading centered">
+        <p class="eyebrow">Pipeline</p>
+        <h2>Operational flow for breakbulk cargo reconstruction</h2>
+      </div>
+      <div class="pipeline">
+        <div class="pipeline-node"><strong>Capture</strong><span>camera / crane event / field image</span></div>
+        <div class="pipeline-node"><strong>Preprocess</strong><span>background removal and image filtering</span></div>
+        <div class="pipeline-node"><strong>Shape</strong><span>GPU0 Hunyuan3D-2.1 + HiCache++</span></div>
+        <div class="pipeline-node"><strong>Texture</strong><span>GPU1 PBR texture generation</span></div>
+        <div class="pipeline-node"><strong>Asset</strong><span>GLB export, profile, digital twin ingest</span></div>
+      </div>
+    </section>
+
+    <section class="section" id="results">
+      <div class="section-heading">
+        <p class="eyebrow">Interactive results</p>
+        <h2>Generated cargo assets</h2>
+        <p>
+          Click a thumbnail to load a generated cargo mesh. Toggle between white mesh and textured GLB to inspect
+          geometry and PBR reconstruction separately.
+        </p>
+      </div>
+      <div class="gallery-layout">
+        <div class="result-viewer">
+          <div class="toolbar">
+            <span id="gallery-title">Wooden cargo crate</span>
+            <div class="segmented" role="group" aria-label="Mesh mode">
+              <button class="segment active" data-mode="textured">Textured</button>
+              <button class="segment" data-mode="white">White mesh</button>
+            </div>
+          </div>
+          <model-viewer id="galleryModel"
+            src="./resources/gallery/crate/textured.glb"
+            alt="CargoForge reconstruction"
+            camera-controls
+            touch-action="pan-y"
+            interaction-prompt="none"
+            environment-image="legacy"
+            camera-orbit="145deg 70deg auto"
+            zoom-sensitivity="0.25"
+            shadow-intensity="0.15"
+            style="width:100%;height:100%;">
+          </model-viewer>
+        </div>
+        <div class="case-panel">
+          <div id="caseMeta" class="case-meta">
+            <span>Shape 25.3s</span>
+            <span>Texture 61.7s</span>
+            <span>617k faces</span>
+          </div>
+          <div class="thumbnail-list" id="galleryThumbs">
+            <button class="thumb active" data-case="crate"><img src="./resources/gallery/crate/input.png" alt="Wooden cargo crate"><span>Wooden crate</span></button>
+            <button class="thumb" data-case="steel-stack"><img src="./resources/gallery/steel-stack/input.png" alt="Steel stack"><span>Steel stack</span></button>
+            <button class="thumb" data-case="pipe-bundle"><img src="./resources/gallery/pipe-bundle/input.png" alt="Pipe bundle"><span>Pipe bundle</span></button>
+            <button class="thumb" data-case="frame-rack"><img src="./resources/gallery/frame-rack/input.png" alt="Frame rack"><span>Frame rack</span></button>
+            <button class="thumb" data-case="tarp-cargo"><img src="./resources/gallery/tarp-cargo/input.png" alt="Covered cargo"><span>Covered cargo</span></button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="adaptation">
+      <div class="section-heading centered">
+        <p class="eyebrow">Domain adaptation</p>
+        <h2>Teacher-supervised LoRA for port cargo geometry</h2>
+        <p>
+          Hunyuan3D-2.1 is open-source but weak on long, stacked, and irregular port cargo. CargoForge builds
+          a teacher-labeled cargo dataset and adapts the shape model with LoRA.
+        </p>
+      </div>
+      <div class="comparison-grid">
+        <div class="compare-card">
+          <span>Base Hunyuan3D-2.1</span>
+          <model-viewer src="./resources/lora/cargo-val/base.glb" camera-controls touch-action="pan-y" interaction-prompt="none" environment-image="legacy" camera-orbit="145deg 70deg auto"></model-viewer>
+        </div>
+        <div class="compare-card accent">
+          <span>LoRA step 1500</span>
+          <model-viewer src="./resources/lora/cargo-val/lora1500.glb" camera-controls touch-action="pan-y" interaction-prompt="none" environment-image="legacy" camera-orbit="145deg 70deg auto"></model-viewer>
+        </div>
+        <div class="compare-card">
+          <span>LoRA step 2000</span>
+          <model-viewer src="./resources/lora/cargo-val/lora2000.glb" camera-controls touch-action="pan-y" interaction-prompt="none" environment-image="legacy" camera-orbit="145deg 70deg auto"></model-viewer>
+        </div>
+      </div>
+      <div class="metric-table">
+        <div><strong>Chamfer-L1</strong><span>0.0511 -> 0.0327</span><em>36.0% lower</em></div>
+        <div><strong>F-score@0.05</strong><span>0.670 -> 0.793</span><em>+12.3 points</em></div>
+        <div><strong>LoRA rank</strong><span>Rank-16</span><em>parameter-efficient</em></div>
+        <div><strong>Dataset prep</strong><span>GLB -> watertight/SDF/render</span><em>teacher supervision</em></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-heading">
+        <p class="eyebrow">Serving stack</p>
+        <h2>What makes it more than a demo</h2>
+      </div>
+      <div class="stack-grid">
+        <div class="stack-card"><strong>FastAPI</strong><span>submission, status query, artifacts, dashboard APIs</span></div>
+        <div class="stack-card"><strong>Redis</strong><span>shape queue, texture queue, priority, backpressure, cleanup</span></div>
+        <div class="stack-card"><strong>PostgreSQL</strong><span>jobs, events, artifacts, profiles, worker heartbeats</span></div>
+        <div class="stack-card"><strong>GPU workers</strong><span>GPU0 shape resident, GPU1 texture resident, profile logging</span></div>
+        <div class="stack-card"><strong>Observability</strong><span>P95 latency, QPS, VRAM, CPU/RAM, Redis health, error rate</span></div>
+        <div class="stack-card"><strong>Recovery</strong><span>timeouts, cancellation, stale job cleanup, failure audit trail</span></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div>
+      <strong>CargoForge</strong>
+      <span>Generative 3D reconstruction for port digital twin assets.</span>
+    </div>
+    <div class="footer-links">
+      <a href="./zh.html">中文</a>
+      <a href="./about.html">About</a>
+      <a href="https://github.com/cargo-forge3d/cargo-forge3d.github.io">GitHub</a>
+    </div>
+  </footer>
+
+  <script src="./static/js/site.js"></script>
+</body>
+</html>
